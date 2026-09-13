@@ -33,25 +33,29 @@ export default function AdminPage() {
         backHref="/home"
       />
 
-      <span className="mb-6 inline-block rounded-full bg-gold/25 px-3.5 py-1.5 text-xs font-bold text-plum-deeper">
+      <span className="mb-6 inline-block animate-fade-in-up rounded-full bg-gold/25 px-3.5 py-1.5 text-xs font-bold tracking-wide text-plum-deeper">
         DEMO / PROTOTYPE DATA
       </span>
 
       <div className="grid grid-cols-2 gap-3">
-        {DEMO_METRICS.map((m) => (
-          <div key={m.label} className="rounded-xl border border-line bg-surface p-4">
+        {DEMO_METRICS.map((m, i) => (
+          <div
+            key={m.label}
+            style={{ animationDelay: `${i * 50}ms` }}
+            className="lift-hover animate-fade-in-up rounded-xl border border-line bg-surface p-4 hover:border-plum/30"
+          >
             <p className="font-display text-2xl font-semibold text-plum-deep">{m.value}</p>
             <p className="mt-0.5 text-xs text-inkSoft">{m.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 rounded-xl border border-line bg-surface p-4">
+      <div className="mt-4 animate-fade-in-up rounded-xl border border-line bg-surface p-4">
         <h2 className="mb-2 font-display text-lg font-semibold text-ink">Most Popular Playlist</h2>
         <p className="font-semibold text-plum-deep">OPM Unwind — 42%</p>
       </div>
 
-      <div className="mt-4 rounded-xl border border-line bg-surface p-4">
+      <div className="mt-4 animate-fade-in-up rounded-xl border border-line bg-surface p-4">
         <h2 className="mb-2 font-display text-lg font-semibold text-ink">Recent Activity (Demo)</h2>
         {DEMO_ACTIVITY.map((line) => (
           <p key={line} className="mb-1 text-sm text-inkSoft">
@@ -60,7 +64,7 @@ export default function AdminPage() {
         ))}
       </div>
 
-      <div className="mt-4 rounded-xl border border-line bg-surface p-4">
+      <div className="mt-4 animate-fade-in-up rounded-xl border border-line bg-surface p-4">
         <h2 className="mb-2 font-display text-lg font-semibold text-ink">
           This Browser (Real, Local Only)
         </h2>

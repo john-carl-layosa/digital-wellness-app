@@ -30,19 +30,27 @@ function NeedsStepInner() {
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       <div className="mx-auto w-full max-w-lg flex-1 px-6 py-10">
-        <p className="text-sm font-semibold text-plum">Step 2 of 3</p>
-        <h1 className="mt-2 font-display text-[28px] font-semibold text-ink">
+        <div className="mb-6 flex items-center gap-1.5" aria-hidden="true">
+          <div className="h-1.5 flex-1 rounded-full bg-plum" />
+          <div className="h-1.5 flex-1 rounded-full bg-plum" />
+          <div className="h-1.5 flex-1 rounded-full bg-line" />
+        </div>
+
+        <p className="animate-fade-in-up text-sm font-semibold text-plum">Step 2 of 3</p>
+        <h1 className="mt-2 animate-fade-in-up stagger-1 font-display text-[28px] font-semibold text-ink">
           What are you looking for today?
         </h1>
 
         <div className="mt-8 flex flex-wrap gap-2">
-          {NEEDS.map((n) => (
-            <ChoiceCard key={n} label={n} selected={selected === n} onClick={() => setSelected(n)} />
+          {NEEDS.map((n, i) => (
+            <div key={n} style={{ animationDelay: `${i * 40 + 100}ms` }} className="animate-scale-in">
+              <ChoiceCard label={n} selected={selected === n} onClick={() => setSelected(n)} />
+            </div>
           ))}
         </div>
       </div>
 
-      <div className="sticky bottom-0 border-t border-line bg-canvasAlt px-6 py-5">
+      <div className="glass-surface sticky bottom-0 border-t border-line px-6 py-5">
         <div className="mx-auto w-full max-w-lg">
           <PrimaryButton onClick={continueNext} disabled={!selected} className="w-full">
             Continue

@@ -90,3 +90,17 @@ export const RESET_TAKEAWAYS = [
   "I want to explore new music.",
   "I want to be more aware of how I'm feeling.",
 ] as const;
+
+// Emoji shown alongside each "before pause" feeling option.
+export const FEELING_EMOJI: Record<(typeof BEFORE_PAUSE_FEELINGS)[number], string> = {
+  Drained: "😞",
+  Overloaded: "😣",
+  Tired: "😴",
+  Okay: "🙂",
+  Good: "😊",
+  Other: "🤔",
+};
+
+// "When?" options for a reset's next small act of self-care.
+export const RESET_WHEN_OPTIONS = ["Today / This week", "When I feel overwhelmed"] as const;
+export type ResetWhen = (typeof RESET_WHEN_OPTIONS)[number];

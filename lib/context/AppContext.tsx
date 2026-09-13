@@ -18,6 +18,7 @@ export type ResetEntry = {
   createdAt: string;
   takeaway: string;
   nextSmallAct: string;
+  when?: string;
 };
 
 type AppState = {
@@ -34,6 +35,8 @@ type AppContextValue = AppState & {
   updatePreferences: (genres: Genre[], need: Need) => void;
   addPauseReflection: (r: Omit<PauseReflection, "id" | "createdAt">) => void;
   addResetEntry: (r: Omit<ResetEntry, "id" | "createdAt">) => void;
+  deletePauseReflection: (id: string) => void;
+  deleteResetEntry: (id: string) => void;
   resetAllData: () => void;
 };
 
@@ -102,6 +105,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     persist({ ...state, resetEntries: [entry, ...state.resetEntries] });
   };
 
+  const deletePauseReflection = (id: string) => {
+    persist({ ...state, pauseReflections: state.pauseReflections.filter((r) => r.id !== id) });
+  };
+
+  const deleteResetEntry = (id: string) => {
+    persist({ ...state, resetEntries: state.resetEntries.filter((r) => r.id !== id) });
+  };
+
   const resetAllData = () => {
     persist(defaultState);
   };
@@ -114,6 +125,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updatePreferences,
       addPauseReflection,
       addResetEntry,
+      deletePauseReflection,
+      deleteResetEntry,
       resetAllData,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -11,8 +11,8 @@ import { useAppData } from "../../lib/context/AppContext";
 function Pill({ label, active }: { label: string; active?: boolean }) {
   return (
     <span
-      className={`rounded-full px-3.5 py-1.5 text-xs font-medium ${
-        active ? "bg-plum text-white" : "bg-plum-soft text-inkSoft"
+      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+        active ? "bg-plum text-white shadow-soft" : "bg-plum-soft text-inkSoft"
       }`}
     >
       {label}
@@ -29,14 +29,14 @@ function RecommendationInner() {
   const recommendation = getRecommendation(favoriteGenres.length ? favoriteGenres : ["OPM"], need);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-plum-deeper/40 px-4 py-10">
-      <div className="w-full max-w-md rounded-3xl bg-canvas p-6 shadow-card">
+    <div className="flex min-h-screen items-center justify-center bg-plum-deeper/40 px-4 py-10 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-md animate-scale-in rounded-3xl bg-canvas p-6 shadow-elevated">
         <div className="mb-2 flex justify-end">
           <button
             type="button"
             onClick={() => router.push("/home")}
             aria-label="Close"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-plum-soft text-plum-deep hover:opacity-80"
+            className="press-scale flex h-9 w-9 items-center justify-center rounded-full bg-plum-soft text-plum-deep hover:bg-plum-soft/70 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/25"
           >
             <X size={18} />
           </button>
@@ -62,10 +62,10 @@ function RecommendationInner() {
           <button
             type="button"
             onClick={() => router.push("/pause")}
-            className="mt-6 flex items-center gap-2 text-sm font-semibold text-plum hover:opacity-80"
+            className="press-scale group mt-6 flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-plum hover:bg-plum-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/25"
           >
             When you&apos;re ready, reflect in My Pause
-            <ArrowRight size={16} />
+            <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
           </button>
         </div>
       </div>

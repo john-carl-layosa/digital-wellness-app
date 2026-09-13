@@ -15,12 +15,12 @@ export function ScreenHeader({ title, subtitle, showBack, backHref = "/home" }: 
   const router = useRouter();
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 animate-fade-in-up">
       {showBack && (
         <button
           type="button"
           onClick={() => router.push(backHref)}
-          className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-plum-soft text-plum-deep hover:opacity-80"
+          className="press-scale mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-plum-soft text-plum-deep hover:bg-plum-soft/70 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/25"
           aria-label="Go back"
         >
           <ChevronLeft size={20} />
