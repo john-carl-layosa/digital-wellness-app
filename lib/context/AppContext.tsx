@@ -1,7 +1,26 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { Genre, Need } from "../data/options";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  GENRES,
+  NEEDS,
+  Genre,
+  Need,
+} from "../data/options";
+import {
+  AVATAR_OPTIONS,
+  DEFAULT_USER_PROFILE,
+  PAUSE_FREQUENCY_OPTIONS,
+  PAUSE_TIME_OPTIONS,
+  WELLNESS_FOCUS_OPTIONS,
+  UserProfile,
+} from "../data/profileOptions";
 
 export type PauseReflection = {
   id: string;
@@ -22,7 +41,9 @@ export type ResetEntry = {
 };
 
 type AppState = {
+  schemaVersion: 2;
   onboardingComplete: boolean;
+  profile: UserProfile;
   favoriteGenres: Genre[];
   defaultNeed: Need | null;
   pauseReflections: PauseReflection[];
@@ -31,90 +52,404 @@ type AppState = {
 
 type AppContextValue = AppState & {
   loading: boolean;
-  completeOnboarding: (genres: Genre[], need: Need) => void;
-  updatePreferences: (genres: Genre[], need: Need) => void;
-  addPauseReflection: (r: Omit<PauseReflection, "id" | "createdAt">) => void;
-  addResetEntry: (r: Omit<ResetEntry, "id" | "createdAt">) => void;
-  deletePauseReflection: (id: string) => void;
-  deleteResetEntry: (id: string) => void;
+
+  completeOnboarding: (
+    genres: Genre[],
+    need: Need
+  ) => void;
+
+  updatePreferences: (
+    genres: Genre[],
+    need: Need
+  ) => void;
+
+  updateProfile: (
+    profile: UserProfile
+  ) => void;
+
+  addPauseReflection: (
+    reflection: Omit<
+      PauseReflection,
+      "id" | "createdAt"
+    >
+  ) => void;
+
+  addResetEntry: (
+    entry: Omit<
+      ResetEntry,
+      "id" | "createdAt"
+    >
+  ) => void;
+
+  deletePauseReflection: (
+    id: string
+  ) => void;
+
+  deleteResetEntry: (
+    id: string
+  ) => void;
+
   resetAllData: () => void;
 };
 
-const STORAGE_KEY = "rhythms-of-relief:v1";
+const STORAGE_KEY =
+  "rhythms-of-relief:v1";
 
-const defaultState: AppState = {
-  onboardingComplete: false,
-  favoriteGenres: [],
-  defaultNeed: null,
-  pauseReflections: [],
-  resetEntries: [],
-};
+const createDefaultState =
+  (): AppState => ({
+    schemaVersion: 2,
+    onboardingComplete: false,
 
-const AppContext = createContext<AppContextValue | undefined>(undefined);
+    profile: {
+      ...DEFAULT_USER_PROFILE,
+      wellnessFocus: [],
+    },
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AppState>(defaultState);
-  const [loading, setLoading] = useState(true);
+    favoriteGenres: [],
+    defaultNeed: null,
+    pauseReflections: [],
+    resetEntries: [],
+  });
 
-  // Load persisted state on mount (client only — localStorage isn't available during SSR)
+function isRecord(
+  value: unknown
+): value is Record<string, unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null
+  );
+}
+
+function normalizeProfile(
+  value: unknown
+): UserProfile {
+  const raw = isRecord(value)
+    ? value
+    : {};
+
+  const avatarValues =
+    AVATAR_OPTIONS.map(
+      (option) => option.value
+    );
+
+  const focusValues =
+    WELLNESS_FOCUS_OPTIONS.map(
+      (option) => option.value
+    );
+
+  const pauseTimeValues =
+    PAUSE_TIME_OPTIONS.map(
+      (option) => option.value
+    );
+
+  const pauseFrequencyValues =
+    PAUSE_FREQUENCY_OPTIONS.map(
+      (option) => option.value
+    );
+
+  return {
+    fullName:
+      typeof raw.fullName === "string"
+        ? raw.fullName
+        : "",
+
+    preferredName:
+      typeof raw.preferredName ===
+      "string"
+        ? raw.preferredName
+        : "",
+
+    avatar:
+      typeof raw.avatar === "string" &&
+      avatarValues.includes(
+        raw.avatar as UserProfile["avatar"]
+      )
+        ? (raw.avatar as UserProfile["avatar"])
+        : DEFAULT_USER_PROFILE.avatar,
+
+    avatarImage:
+      typeof raw.avatarImage ===
+        "string" &&
+      raw.avatarImage.startsWith(
+        "data:image/"
+      )
+        ? raw.avatarImage
+        : null,
+
+    wellnessFocus: Array.isArray(
+      raw.wellnessFocus
+    )
+      ? raw.wellnessFocus.filter(
+          (
+            item
+          ): item is UserProfile["wellnessFocus"][number] =>
+            typeof item === "string" &&
+            focusValues.includes(
+              item as UserProfile["wellnessFocus"][number]
+            )
+        )
+      : [],
+
+    pauseTime:
+      typeof raw.pauseTime === "string" &&
+      pauseTimeValues.includes(
+        raw.pauseTime as NonNullable<
+          UserProfile["pauseTime"]
+        >
+      )
+        ? (raw.pauseTime as NonNullable<
+            UserProfile["pauseTime"]
+          >)
+        : null,
+
+    pauseFrequency:
+      typeof raw.pauseFrequency ===
+        "string" &&
+      pauseFrequencyValues.includes(
+        raw.pauseFrequency as NonNullable<
+          UserProfile["pauseFrequency"]
+        >
+      )
+        ? (raw.pauseFrequency as NonNullable<
+            UserProfile["pauseFrequency"]
+          >)
+        : null,
+
+    pauseIntention:
+      typeof raw.pauseIntention ===
+      "string"
+        ? raw.pauseIntention
+        : "",
+  };
+}
+
+function normalizeStoredState(
+  value: unknown
+): AppState {
+  const raw = isRecord(value)
+    ? value
+    : {};
+
+  const favoriteGenres = Array.isArray(
+    raw.favoriteGenres
+  )
+    ? raw.favoriteGenres.filter(
+        (item): item is Genre =>
+          typeof item === "string" &&
+          GENRES.includes(item as Genre)
+      )
+    : [];
+
+  const defaultNeed =
+    typeof raw.defaultNeed === "string" &&
+    NEEDS.includes(
+      raw.defaultNeed as Need
+    )
+      ? (raw.defaultNeed as Need)
+      : null;
+
+  return {
+    ...createDefaultState(),
+
+    onboardingComplete:
+      raw.onboardingComplete === true,
+
+    profile: normalizeProfile(
+      raw.profile
+    ),
+
+    favoriteGenres,
+    defaultNeed,
+
+    pauseReflections: Array.isArray(
+      raw.pauseReflections
+    )
+      ? (raw.pauseReflections as PauseReflection[])
+      : [],
+
+    resetEntries: Array.isArray(
+      raw.resetEntries
+    )
+      ? (raw.resetEntries as ResetEntry[])
+      : [],
+  };
+}
+
+const AppContext =
+  createContext<
+    AppContextValue | undefined
+  >(undefined);
+
+export function AppProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [state, setState] =
+    useState<AppState>(
+      createDefaultState
+    );
+
+  const [loading, setLoading] =
+    useState(true);
+
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw =
+        window.localStorage.getItem(
+          STORAGE_KEY
+        );
+
       if (raw) {
-        setState({ ...defaultState, ...JSON.parse(raw) });
+        setState(
+          normalizeStoredState(
+            JSON.parse(raw)
+          )
+        );
       }
-    } catch (e) {
-      console.warn("Failed to load stored data", e);
+    } catch (error) {
+      console.warn(
+        "Failed to load stored data",
+        error
+      );
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const persist = (next: AppState) => {
-    setState(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch (e) {
-      console.warn("Failed to save data", e);
-    }
+  const updateState = (
+    updater: (
+      current: AppState
+    ) => AppState
+  ) => {
+    setState((current) => {
+      const next = updater(current);
+
+      try {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(next)
+        );
+      } catch (error) {
+        console.warn(
+          "Failed to save data",
+          error
+        );
+      }
+
+      return next;
+    });
   };
 
-  const completeOnboarding = (genres: Genre[], need: Need) => {
-    persist({ ...state, onboardingComplete: true, favoriteGenres: genres, defaultNeed: need });
+  const completeOnboarding = (
+    genres: Genre[],
+    need: Need
+  ) => {
+    updateState((current) => ({
+      ...current,
+      onboardingComplete: true,
+      favoriteGenres: genres,
+      defaultNeed: need,
+    }));
   };
 
-  const updatePreferences = (genres: Genre[], need: Need) => {
-    persist({ ...state, favoriteGenres: genres, defaultNeed: need });
+  const updatePreferences = (
+    genres: Genre[],
+    need: Need
+  ) => {
+    updateState((current) => ({
+      ...current,
+      favoriteGenres: genres,
+      defaultNeed: need,
+    }));
   };
 
-  const addPauseReflection = (r: Omit<PauseReflection, "id" | "createdAt">) => {
+  const updateProfile = (
+    profile: UserProfile
+  ) => {
+    updateState((current) => ({
+      ...current,
+      profile,
+    }));
+  };
+
+  const addPauseReflection = (
+    reflection: Omit<
+      PauseReflection,
+      "id" | "createdAt"
+    >
+  ) => {
     const entry: PauseReflection = {
-      ...r,
+      ...reflection,
       id: `${Date.now()}`,
-      createdAt: new Date().toISOString(),
+      createdAt:
+        new Date().toISOString(),
     };
-    persist({ ...state, pauseReflections: [entry, ...state.pauseReflections] });
+
+    updateState((current) => ({
+      ...current,
+
+      pauseReflections: [
+        entry,
+        ...current.pauseReflections,
+      ],
+    }));
   };
 
-  const addResetEntry = (r: Omit<ResetEntry, "id" | "createdAt">) => {
+  const addResetEntry = (
+    entryData: Omit<
+      ResetEntry,
+      "id" | "createdAt"
+    >
+  ) => {
     const entry: ResetEntry = {
-      ...r,
+      ...entryData,
       id: `${Date.now()}`,
-      createdAt: new Date().toISOString(),
+      createdAt:
+        new Date().toISOString(),
     };
-    persist({ ...state, resetEntries: [entry, ...state.resetEntries] });
+
+    updateState((current) => ({
+      ...current,
+
+      resetEntries: [
+        entry,
+        ...current.resetEntries,
+      ],
+    }));
   };
 
-  const deletePauseReflection = (id: string) => {
-    persist({ ...state, pauseReflections: state.pauseReflections.filter((r) => r.id !== id) });
+  const deletePauseReflection = (
+    id: string
+  ) => {
+    updateState((current) => ({
+      ...current,
+
+      pauseReflections:
+        current.pauseReflections.filter(
+          (reflection) =>
+            reflection.id !== id
+        ),
+    }));
   };
 
-  const deleteResetEntry = (id: string) => {
-    persist({ ...state, resetEntries: state.resetEntries.filter((r) => r.id !== id) });
+  const deleteResetEntry = (
+    id: string
+  ) => {
+    updateState((current) => ({
+      ...current,
+
+      resetEntries:
+        current.resetEntries.filter(
+          (entry) => entry.id !== id
+        ),
+    }));
   };
 
   const resetAllData = () => {
-    persist(defaultState);
+    updateState(() =>
+      createDefaultState()
+    );
   };
 
   const value = useMemo(
@@ -123,6 +458,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       loading,
       completeOnboarding,
       updatePreferences,
+      updateProfile,
       addPauseReflection,
       addResetEntry,
       deletePauseReflection,
@@ -133,11 +469,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [state, loading]
   );
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  );
 }
 
 export function useAppData() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error("useAppData must be used within AppProvider");
-  return ctx;
+  const context =
+    useContext(AppContext);
+
+  if (!context) {
+    throw new Error(
+      "useAppData must be used within AppProvider"
+    );
+  }
+
+  return context;
 }
