@@ -10,13 +10,10 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     scope: "/",
     display: "standalone",
+    orientation: "portrait-primary",
     background_color: "#F6F1FB",
     theme_color: "#2A1B47",
-    categories: [
-      "health",
-      "lifestyle",
-      "music",
-    ],
+    categories: ["health", "lifestyle", "music"],
     icons: [
       {
         src: "/icons/icon-192.png",
@@ -41,8 +38,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: "My Rhythm",
         short_name: "My Rhythm",
-        description:
-          "Open your personal playlist collection.",
+        description: "Open your personal playlist collection.",
         url: "/my-rhythm",
         icons: [
           {
@@ -55,8 +51,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: "My Pause",
         short_name: "My Pause",
-        description:
-          "Take a mindful pause and reflect.",
+        description: "Take a mindful pause and reflect.",
         url: "/pause",
         icons: [
           {
