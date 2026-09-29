@@ -20,6 +20,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { InstallAppButton } from "./InstallAppButton";
 
 const NAV_ITEMS: {
   href: string;
@@ -144,7 +145,8 @@ function MobileHeader() {
     const handlePointerDown = (
       event: PointerEvent
     ) => {
-      const target = event.target as Node;
+      const target =
+        event.target as Node;
 
       if (
         menuRef.current?.contains(target)
@@ -201,8 +203,8 @@ function MobileHeader() {
       <div className="glass-surface flex items-center justify-between border-b border-line px-4 py-3">
         <Link
           href="/home"
-          aria-label="Go to Home"
           className="press-scale flex items-center gap-2 rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/25"
+          aria-label="Go to Home"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-plum-deeper">
             <Music2
@@ -299,6 +301,10 @@ function MobileHeader() {
               </Link>
             );
           })}
+
+          <div className="mt-2 border-t border-line pt-2">
+            <InstallAppButton variant="mobile" />
+          </div>
         </div>
       )}
     </div>
@@ -314,7 +320,6 @@ export function NavShell({
 
   return (
     <div className="min-h-screen bg-canvas md:pl-64 lg:pl-72">
-      {/* Fixed desktop sidebar */}
       <aside className="sidebar-surface fixed inset-y-0 left-0 z-30 hidden w-64 md:block lg:w-72">
         <div className="flex h-full flex-col px-4 py-7">
           <div className="mb-9">
@@ -323,19 +328,18 @@ export function NavShell({
 
           <DesktopNavList />
 
+          <InstallAppButton variant="sidebar" />
+
           <p className="mt-6 px-2 text-xs italic leading-relaxed text-white/45">
-            You can&apos;t pour from an empty
-            cup.
+            Where music meets mindfulness.
             <br />
-            Take a pause. You matter.
+            Find your rhythm. Feel the relief.
           </p>
         </div>
       </aside>
 
-      {/* Fixed mobile header */}
       <MobileHeader />
 
-      {/* Scrollable main page content */}
       <main
         key={pathname}
         className="mx-auto w-full animate-fade-in-up px-5 pb-10 pt-20 md:px-8 md:pb-10 md:pt-8 lg:px-10"

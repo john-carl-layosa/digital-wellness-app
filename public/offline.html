@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+
+    <meta
+      name="theme-color"
+      content="#2A1B47"
+    />
+
+    <title>
+      Offline | Rhythms of Relief
+    </title>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #f6f1fb;
+        color: #251c35;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      main {
+        width: 100%;
+        max-width: 420px;
+        padding: 36px 28px;
+        text-align: center;
+        background: #ffffff;
+        border: 1px solid #e4d9f5;
+        border-radius: 28px;
+        box-shadow:
+          0 16px 40px -12px
+          rgba(64, 42, 102, 0.2);
+      }
+
+      .icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 18px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #e9e0f8;
+        color: #6e4aa6;
+        font-size: 28px;
+      }
+
+      h1 {
+        margin: 0;
+        font-family: Georgia, serif;
+        font-size: 28px;
+      }
+
+      p {
+        margin: 12px 0 24px;
+        color: #6c6079;
+        line-height: 1.6;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 24px;
+        background: #6e4aa6;
+        color: white;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:focus-visible {
+        outline: 3px solid
+          rgba(110, 74, 166, 0.3);
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <div
+        class="icon"
+        aria-hidden="true"
+      >
+        ♪
+      </div>
+
+      <h1>You&apos;re offline</h1>
+
+      <p>
+        Your saved information is still
+        on this device. Reconnect to open
+        the latest version of Rhythms of
+        Relief.
+      </p>
+
+      <button
+        type="button"
+        onclick="window.location.reload()"
+      >
+        Try Again
+      </button>
+    </main>
+  </body>
+</html>

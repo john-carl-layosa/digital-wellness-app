@@ -21,6 +21,11 @@ import {
   WELLNESS_FOCUS_OPTIONS,
   UserProfile,
 } from "../data/profileOptions";
+import {
+  PLAYLIST_CATEGORIES,
+  Playlist,
+  PlaylistCategory,
+} from "../data/playlists";
 
 export type PauseReflection = {
   id: string;
@@ -41,107 +46,87 @@ export type ResetEntry = {
 };
 
 type AppState = {
-  schemaVersion: 2;
+  schemaVersion: 3;
   onboardingComplete: boolean;
   profile: UserProfile;
   favoriteGenres: Genre[];
   defaultNeed: Need | null;
+  playlists: Playlist[];
   pauseReflections: PauseReflection[];
   resetEntries: ResetEntry[];
 };
 
 type AppContextValue = AppState & {
   loading: boolean;
-
   completeOnboarding: (
     genres: Genre[],
     need: Need
   ) => void;
-
   updatePreferences: (
     genres: Genre[],
     need: Need
   ) => void;
-
-  updateProfile: (
-    profile: UserProfile
+  updateProfile: (profile: UserProfile) => void;
+  addPlaylist: (playlist: Playlist) => void;
+  updatePlaylist: (
+    id: string,
+    updates: Pick<
+      Playlist,
+      "name" | "description" | "category"
+    >
   ) => void;
-
+  deletePlaylist: (id: string) => void;
+  movePlaylist: (
+    id: string,
+    direction: "up" | "down"
+  ) => void;
   addPauseReflection: (
     reflection: Omit<
       PauseReflection,
       "id" | "createdAt"
     >
   ) => void;
-
   addResetEntry: (
-    entry: Omit<
-      ResetEntry,
-      "id" | "createdAt"
-    >
+    entry: Omit<ResetEntry, "id" | "createdAt">
   ) => void;
-
-  deletePauseReflection: (
-    id: string
-  ) => void;
-
-  deleteResetEntry: (
-    id: string
-  ) => void;
-
+  deletePauseReflection: (id: string) => void;
+  deleteResetEntry: (id: string) => void;
   resetAllData: () => void;
 };
 
-const STORAGE_KEY =
-  "rhythms-of-relief:v1";
+const STORAGE_KEY = "rhythms-of-relief:v1";
 
-const createDefaultState =
-  (): AppState => ({
-    schemaVersion: 2,
-    onboardingComplete: false,
-
-    profile: {
-      ...DEFAULT_USER_PROFILE,
-      wellnessFocus: [],
-    },
-
-    favoriteGenres: [],
-    defaultNeed: null,
-    pauseReflections: [],
-    resetEntries: [],
-  });
+const createDefaultState = (): AppState => ({
+  schemaVersion: 3,
+  onboardingComplete: false,
+  profile: {
+    ...DEFAULT_USER_PROFILE,
+    wellnessFocus: [],
+  },
+  favoriteGenres: [],
+  defaultNeed: null,
+  playlists: [],
+  pauseReflections: [],
+  resetEntries: [],
+});
 
 function isRecord(
   value: unknown
 ): value is Record<string, unknown> {
-  return (
-    typeof value === "object" &&
-    value !== null
-  );
+  return typeof value === "object" && value !== null;
 }
 
-function normalizeProfile(
-  value: unknown
-): UserProfile {
-  const raw = isRecord(value)
-    ? value
-    : {};
-
-  const avatarValues =
-    AVATAR_OPTIONS.map(
-      (option) => option.value
-    );
-
-  const focusValues =
-    WELLNESS_FOCUS_OPTIONS.map(
-      (option) => option.value
-    );
-
-  const pauseTimeValues =
-    PAUSE_TIME_OPTIONS.map(
-      (option) => option.value
-    );
-
+function normalizeProfile(value: unknown): UserProfile {
+  const raw = isRecord(value) ? value : {};
+  const avatarValues = AVATAR_OPTIONS.map(
+    (option) => option.value
+  );
+  const focusValues = WELLNESS_FOCUS_OPTIONS.map(
+    (option) => option.value
+  );
+  const pauseTimeValues = PAUSE_TIME_OPTIONS.map(
+    (option) => option.value
+  );
   const pauseFrequencyValues =
     PAUSE_FREQUENCY_OPTIONS.map(
       (option) => option.value
@@ -152,13 +137,10 @@ function normalizeProfile(
       typeof raw.fullName === "string"
         ? raw.fullName
         : "",
-
     preferredName:
-      typeof raw.preferredName ===
-      "string"
+      typeof raw.preferredName === "string"
         ? raw.preferredName
         : "",
-
     avatar:
       typeof raw.avatar === "string" &&
       avatarValues.includes(
@@ -166,30 +148,24 @@ function normalizeProfile(
       )
         ? (raw.avatar as UserProfile["avatar"])
         : DEFAULT_USER_PROFILE.avatar,
-
     avatarImage:
-      typeof raw.avatarImage ===
-        "string" &&
-      raw.avatarImage.startsWith(
-        "data:image/"
-      )
+      typeof raw.avatarImage === "string" &&
+      raw.avatarImage.startsWith("data:image/")
         ? raw.avatarImage
         : null,
-
     wellnessFocus: Array.isArray(
       raw.wellnessFocus
     )
       ? raw.wellnessFocus.filter(
           (
-            item
-          ): item is UserProfile["wellnessFocus"][number] =>
-            typeof item === "string" &&
+            value
+          ): value is UserProfile["wellnessFocus"][number] =>
+            typeof value === "string" &&
             focusValues.includes(
-              item as UserProfile["wellnessFocus"][number]
+              value as UserProfile["wellnessFocus"][number]
             )
         )
       : [],
-
     pauseTime:
       typeof raw.pauseTime === "string" &&
       pauseTimeValues.includes(
@@ -201,10 +177,8 @@ function normalizeProfile(
             UserProfile["pauseTime"]
           >)
         : null,
-
     pauseFrequency:
-      typeof raw.pauseFrequency ===
-        "string" &&
+      typeof raw.pauseFrequency === "string" &&
       pauseFrequencyValues.includes(
         raw.pauseFrequency as NonNullable<
           UserProfile["pauseFrequency"]
@@ -214,10 +188,8 @@ function normalizeProfile(
             UserProfile["pauseFrequency"]
           >)
         : null,
-
     pauseIntention:
-      typeof raw.pauseIntention ===
-      "string"
+      typeof raw.pauseIntention === "string"
         ? raw.pauseIntention
         : "",
   };
@@ -226,59 +198,107 @@ function normalizeProfile(
 function normalizeStoredState(
   value: unknown
 ): AppState {
-  const raw = isRecord(value)
-    ? value
-    : {};
+  const raw = isRecord(value) ? value : {};
 
   const favoriteGenres = Array.isArray(
     raw.favoriteGenres
   )
     ? raw.favoriteGenres.filter(
-        (item): item is Genre =>
-          typeof item === "string" &&
-          GENRES.includes(item as Genre)
+        (value): value is Genre =>
+          typeof value === "string" &&
+          GENRES.includes(value as Genre)
       )
     : [];
 
   const defaultNeed =
     typeof raw.defaultNeed === "string" &&
-    NEEDS.includes(
-      raw.defaultNeed as Need
-    )
+    NEEDS.includes(raw.defaultNeed as Need)
       ? (raw.defaultNeed as Need)
       : null;
 
+  const playlists = Array.isArray(raw.playlists)
+    ? raw.playlists.flatMap(
+        (value): Playlist[] => {
+          if (!isRecord(value)) {
+            return [];
+          }
+
+          const category = value.category;
+
+          if (
+            typeof value.id !== "string" ||
+            typeof value.spotifyId !== "string" ||
+            typeof value.spotifyUrl !== "string" ||
+            typeof value.name !== "string" ||
+            typeof category !== "string" ||
+            !PLAYLIST_CATEGORIES.includes(
+              category as PlaylistCategory
+            )
+          ) {
+            return [];
+          }
+
+          return [
+            {
+              id: value.id,
+              spotifyId: value.spotifyId,
+              spotifyUrl: value.spotifyUrl,
+              name: value.name,
+              originalName:
+                typeof value.originalName === "string"
+                  ? value.originalName
+                  : value.name,
+              description:
+                typeof value.description === "string"
+                  ? value.description
+                  : "",
+              category:
+                category as PlaylistCategory,
+              coverImage:
+                typeof value.coverImage === "string"
+                  ? value.coverImage
+                  : null,
+              trackCount:
+                typeof value.trackCount === "number"
+                  ? value.trackCount
+                  : null,
+              ownerName:
+                typeof value.ownerName === "string"
+                  ? value.ownerName
+                  : null,
+              addedAt:
+                typeof value.addedAt === "string"
+                  ? value.addedAt
+                  : new Date().toISOString(),
+            },
+          ];
+        }
+      )
+    : [];
+
   return {
     ...createDefaultState(),
-
     onboardingComplete:
       raw.onboardingComplete === true,
-
-    profile: normalizeProfile(
-      raw.profile
-    ),
-
+    profile: normalizeProfile(raw.profile),
     favoriteGenres,
     defaultNeed,
-
+    playlists,
     pauseReflections: Array.isArray(
       raw.pauseReflections
     )
       ? (raw.pauseReflections as PauseReflection[])
       : [],
-
-    resetEntries: Array.isArray(
-      raw.resetEntries
-    )
+    resetEntries: Array.isArray(raw.resetEntries)
       ? (raw.resetEntries as ResetEntry[])
       : [],
   };
 }
 
 const AppContext =
-  createContext<
-    AppContextValue | undefined
-  >(undefined);
+  createContext<AppContextValue | undefined>(
+    undefined
+  );
 
 export function AppProvider({
   children,
@@ -286,25 +306,17 @@ export function AppProvider({
   children: React.ReactNode;
 }) {
   const [state, setState] =
-    useState<AppState>(
-      createDefaultState
-    );
-
-  const [loading, setLoading] =
-    useState(true);
+    useState<AppState>(createDefaultState);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     try {
       const raw =
-        window.localStorage.getItem(
-          STORAGE_KEY
-        );
+        window.localStorage.getItem(STORAGE_KEY);
 
       if (raw) {
         setState(
-          normalizeStoredState(
-            JSON.parse(raw)
-          )
+          normalizeStoredState(JSON.parse(raw))
         );
       }
     } catch (error) {
@@ -318,9 +330,7 @@ export function AppProvider({
   }, []);
 
   const updateState = (
-    updater: (
-      current: AppState
-    ) => AppState
+    updater: (current: AppState) => AppState
   ) => {
     setState((current) => {
       const next = updater(current);
@@ -373,6 +383,84 @@ export function AppProvider({
     }));
   };
 
+  const addPlaylist = (playlist: Playlist) => {
+    updateState((current) => ({
+      ...current,
+      playlists: [
+        ...current.playlists,
+        playlist,
+      ],
+    }));
+  };
+
+  const updatePlaylist = (
+    id: string,
+    updates: Pick<
+      Playlist,
+      "name" | "description" | "category"
+    >
+  ) => {
+    updateState((current) => ({
+      ...current,
+      playlists: current.playlists.map(
+        (playlist) =>
+          playlist.id === id
+            ? {
+                ...playlist,
+                ...updates,
+              }
+            : playlist
+      ),
+    }));
+  };
+
+  const deletePlaylist = (id: string) => {
+    updateState((current) => ({
+      ...current,
+      playlists: current.playlists.filter(
+        (playlist) => playlist.id !== id
+      ),
+    }));
+  };
+
+  const movePlaylist = (
+    id: string,
+    direction: "up" | "down"
+  ) => {
+    updateState((current) => {
+      const index = current.playlists.findIndex(
+        (playlist) => playlist.id === id
+      );
+
+      const nextIndex =
+        direction === "up"
+          ? index - 1
+          : index + 1;
+
+      if (
+        index < 0 ||
+        nextIndex < 0 ||
+        nextIndex >= current.playlists.length
+      ) {
+        return current;
+      }
+
+      const playlists = [
+        ...current.playlists,
+      ];
+
+      [playlists[index], playlists[nextIndex]] = [
+        playlists[nextIndex],
+        playlists[index],
+      ];
+
+      return {
+        ...current,
+        playlists,
+      };
+    });
+  };
+
   const addPauseReflection = (
     reflection: Omit<
       PauseReflection,
@@ -382,13 +470,11 @@ export function AppProvider({
     const entry: PauseReflection = {
       ...reflection,
       id: `${Date.now()}`,
-      createdAt:
-        new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
 
     updateState((current) => ({
       ...current,
-
       pauseReflections: [
         entry,
         ...current.pauseReflections,
@@ -397,21 +483,19 @@ export function AppProvider({
   };
 
   const addResetEntry = (
-    entryData: Omit<
+    resetEntry: Omit<
       ResetEntry,
       "id" | "createdAt"
     >
   ) => {
     const entry: ResetEntry = {
-      ...entryData,
+      ...resetEntry,
       id: `${Date.now()}`,
-      createdAt:
-        new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
 
     updateState((current) => ({
       ...current,
-
       resetEntries: [
         entry,
         ...current.resetEntries,
@@ -424,7 +508,6 @@ export function AppProvider({
   ) => {
     updateState((current) => ({
       ...current,
-
       pauseReflections:
         current.pauseReflections.filter(
           (reflection) =>
@@ -433,12 +516,9 @@ export function AppProvider({
     }));
   };
 
-  const deleteResetEntry = (
-    id: string
-  ) => {
+  const deleteResetEntry = (id: string) => {
     updateState((current) => ({
       ...current,
-
       resetEntries:
         current.resetEntries.filter(
           (entry) => entry.id !== id
@@ -447,9 +527,7 @@ export function AppProvider({
   };
 
   const resetAllData = () => {
-    updateState(() =>
-      createDefaultState()
-    );
+    updateState(() => createDefaultState());
   };
 
   const value = useMemo(
@@ -459,6 +537,10 @@ export function AppProvider({
       completeOnboarding,
       updatePreferences,
       updateProfile,
+      addPlaylist,
+      updatePlaylist,
+      deletePlaylist,
+      movePlaylist,
       addPauseReflection,
       addResetEntry,
       deletePauseReflection,
@@ -477,8 +559,7 @@ export function AppProvider({
 }
 
 export function useAppData() {
-  const context =
-    useContext(AppContext);
+  const context = useContext(AppContext);
 
   if (!context) {
     throw new Error(

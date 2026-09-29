@@ -1,9 +1,21 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Sparkles } from "lucide-react";
-import { Genre, Need } from "../../../lib/data/options";
+import React, {
+  Suspense,
+  useState,
+} from "react";
+import {
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
+import {
+  Headphones,
+  Sparkles,
+} from "lucide-react";
+import {
+  Genre,
+  Need,
+} from "../../../lib/data/options";
 import { getRecommendation } from "../../../lib/utils/recommend";
 import { PrimaryButton } from "../../../components/PrimaryButton";
 import { PlaylistCard } from "../../../components/PlaylistCard";
@@ -12,22 +24,37 @@ import { useAppData } from "../../../lib/context/AppContext";
 function ResultStepInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { completeOnboarding } = useAppData();
-  const [starting, setStarting] = useState(false);
+
+  const {
+    completeOnboarding,
+    playlists,
+  } = useAppData();
+
+  const [starting, setStarting] =
+    useState(false);
 
   const genres: Genre[] = (() => {
     try {
-      return JSON.parse(searchParams.get("genres") ?? "[]");
+      return JSON.parse(
+        searchParams.get("genres") ?? "[]"
+      );
     } catch {
       return [];
     }
   })();
-  const need = (searchParams.get("need") as Need) || "Calm";
 
-  const recommendation = getRecommendation(genres, need);
+  const need =
+    (searchParams.get("need") as Need) ||
+    "Calm";
+
+  const recommendation = getRecommendation(
+    playlists,
+    need
+  );
 
   const finish = () => {
     setStarting(true);
+
     setTimeout(() => {
       completeOnboarding(genres, need);
       router.replace("/home");
@@ -37,36 +64,77 @@ function ResultStepInner() {
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center px-6 py-10 text-center">
-        <div className="mb-6 flex w-full items-center gap-1.5" aria-hidden="true">
+        <div
+          className="mb-6 flex w-full items-center gap-1.5"
+          aria-hidden="true"
+        >
           <div className="h-1.5 flex-1 rounded-full bg-plum" />
           <div className="h-1.5 flex-1 rounded-full bg-plum" />
           <div className="h-1.5 flex-1 rounded-full bg-plum" />
         </div>
 
-        <p className="animate-fade-in-up text-sm font-semibold text-plum">Step 3 of 3</p>
+        <p className="animate-fade-in-up text-sm font-semibold text-plum">
+          Step 3 of 3
+        </p>
 
         <div className="mb-3 mt-6 flex h-14 w-14 animate-pop-in items-center justify-center rounded-full bg-plum-soft shadow-soft">
-          <Sparkles size={26} className="text-plum" />
+          <Sparkles
+            size={26}
+            className="text-plum"
+          />
         </div>
 
-        <h2 className="animate-fade-in-up stagger-1 text-lg font-semibold text-inkSoft">
-          Your Rhythm Today
-        </h2>
-        <p className="mt-1 animate-fade-in-up stagger-2 font-display text-3xl font-semibold text-ink">
-          {recommendation.title}
-        </p>
-        <p className="mb-8 mt-2 animate-fade-in-up stagger-2 italic text-inkSoft">
-          {recommendation.blurb}
-        </p>
+        {recommendation ? (
+          <>
+            <h2 className="animate-fade-in-up stagger-1 text-lg font-semibold text-inkSoft">
+              Your Rhythm Today
+            </h2>
 
-        <div className="w-full animate-fade-in-up stagger-3 text-left">
-          <PlaylistCard playlist={recommendation.playlist} />
-        </div>
+            <p className="mt-1 animate-fade-in-up stagger-2 font-display text-3xl font-semibold text-ink">
+              {recommendation.title}
+            </p>
+
+            <p className="mb-8 mt-2 animate-fade-in-up stagger-2 italic text-inkSoft">
+              {recommendation.blurb}
+            </p>
+
+            <div className="w-full animate-fade-in-up stagger-3 text-left">
+              <PlaylistCard
+                playlist={
+                  recommendation.playlist
+                }
+              />
+            </div>
+          </>
+        ) : (
+          <div className="mt-2 w-full animate-fade-in-up rounded-3xl border border-dashed border-plum/35 bg-surface px-6 py-9">
+            <Headphones
+              size={26}
+              className="mx-auto text-plum"
+            />
+
+            <h2 className="mt-3 font-display text-2xl font-semibold text-ink">
+              Your music space is ready
+            </h2>
+
+            <p className="mt-2 text-sm leading-relaxed text-inkSoft">
+              Once you enter the app, add the
+              Spotify playlists you already love.
+              We will use your labels to
+              personalize what appears for each
+              mood.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="glass-surface sticky bottom-0 border-t border-line px-6 py-5">
         <div className="mx-auto w-full max-w-lg">
-          <PrimaryButton onClick={finish} loading={starting} className="w-full">
+          <PrimaryButton
+            onClick={finish}
+            loading={starting}
+            className="w-full"
+          >
             Start My Journey
           </PrimaryButton>
         </div>

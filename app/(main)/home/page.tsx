@@ -16,6 +16,7 @@ import {
   Sprout,
   Heart,
   Info,
+  Plus,
 } from "lucide-react";
 import { useAppData } from "../../../lib/context/AppContext";
 import {
@@ -59,17 +60,13 @@ const HOW_IT_WORKS = [
 
 export default function HomePage() {
   const {
-    favoriteGenres,
     defaultNeed,
     profile,
+    playlists,
   } = useAppData();
 
-  const [
-    selectedMood,
-    setSelectedMood,
-  ] = useState<PauseNeed | null>(
-    null
-  );
+  const [selectedMood, setSelectedMood] =
+    useState<PauseNeed | null>(null);
 
   const [reminder, setReminder] =
     useState<string | null>(null);
@@ -77,9 +74,12 @@ export default function HomePage() {
   const [
     recommendation,
     setRecommendation,
-  ] = useState<Recommendation | null>(
-    null
-  );
+  ] = useState<Recommendation | null>(null);
+
+  const [
+    recommendationReady,
+    setRecommendationReady,
+  ] = useState(false);
 
   const [infoOpen, setInfoOpen] =
     useState(false);
@@ -87,45 +87,46 @@ export default function HomePage() {
   const displayName =
     getDisplayName(profile);
 
+  // Pick a reminder once per visit.
+  // This runs only in the browser to avoid
+  // a server/client random-value mismatch.
   useEffect(() => {
     setReminder(pickReminder());
   }, []);
 
+  // Use the playlists added by the user.
+  // The assigned mood/category determines
+  // which playlist is recommended.
   useEffect(() => {
     const activeNeed = selectedMood
-      ? PAUSE_NEED_TO_NEED[
-          selectedMood
-        ]
+      ? PAUSE_NEED_TO_NEED[selectedMood]
       : defaultNeed ?? "Comfort";
 
     setRecommendation(null);
+    setRecommendationReady(false);
 
-    const timer = window.setTimeout(
-      () => {
-        setRecommendation(
-          getRotatingRecommendation(
-            favoriteGenres.length
-              ? favoriteGenres
-              : ["OPM"],
+    const timeout = setTimeout(() => {
+      setRecommendation(
+        getRotatingRecommendation(
+          playlists,
+          activeNeed
+        )
+      );
 
-            activeNeed
-          )
-        );
-      },
-      280
-    );
+      setRecommendationReady(true);
+    }, 280);
 
-    return () =>
-      window.clearTimeout(timer);
+    return () => clearTimeout(timeout);
   }, [
     selectedMood,
-    favoriteGenres,
+    playlists,
     defaultNeed,
   ]);
 
   return (
     <div className="mx-auto max-w-7xl">
       <div className="grid gap-6 xl:grid-cols-3">
+        {/* Main column */}
         <div className="space-y-6 xl:col-span-2">
           <div className="flex animate-fade-in-up items-start justify-between">
             <div className="flex items-center gap-2">
@@ -160,6 +161,7 @@ export default function HomePage() {
             </Link>
           </div>
 
+          {/* Personalized hero */}
           <div className="hero-surface relative animate-fade-in-up stagger-1 overflow-hidden rounded-3xl border border-line p-6 shadow-soft md:p-8">
             <Leaf className="pointer-events-none absolute right-6 top-6 h-16 w-16 text-sage/25" />
 
@@ -176,9 +178,7 @@ export default function HomePage() {
                   preferredName={
                     profile.preferredName
                   }
-                  avatar={
-                    profile.avatar
-                  }
+                  avatar={profile.avatar}
                   avatarImage={
                     profile.avatarImage
                   }
@@ -205,8 +205,8 @@ export default function HomePage() {
               selected={selectedMood}
               onSelect={(need) =>
                 setSelectedMood(
-                  (current) =>
-                    current === need
+                  (previous) =>
+                    previous === need
                       ? null
                       : need
                 )
@@ -215,6 +215,7 @@ export default function HomePage() {
             />
           </div>
 
+          {/* Recommendation and reminder */}
           <div className="grid gap-6 md:grid-cols-2">
             <div className="animate-fade-in-up stagger-2">
               <h2 className="font-display text-lg font-semibold text-ink">
@@ -224,15 +225,11 @@ export default function HomePage() {
               {recommendation ? (
                 <>
                   <p className="mt-1 font-display text-xl font-semibold text-plum-deep">
-                    {
-                      recommendation.title
-                    }
+                    {recommendation.title}
                   </p>
 
                   <p className="mb-3 mt-0.5 italic text-inkSoft">
-                    {
-                      recommendation.blurb
-                    }
+                    {recommendation.blurb}
                   </p>
 
                   <PlaylistCard
@@ -241,7 +238,7 @@ export default function HomePage() {
                     }
                   />
                 </>
-              ) : (
+              ) : !recommendationReady ? (
                 <div className="mt-3 space-y-2">
                   <Skeleton className="h-6 w-2/3" />
                   <Skeleton className="h-4 w-full" />
@@ -255,6 +252,31 @@ export default function HomePage() {
                       <Skeleton className="mt-2 h-8 w-36 rounded-full" />
                     </div>
                   </div>
+                </div>
+              ) : (
+                <div className="mt-3 rounded-2xl border border-dashed border-plum/35 bg-surface p-5 text-center">
+                  <Headphones
+                    size={22}
+                    className="mx-auto text-plum"
+                  />
+
+                  <p className="mt-2 font-display text-lg font-semibold text-ink">
+                    Add your first playlist
+                  </p>
+
+                  <p className="mt-1 text-sm text-inkSoft">
+                    Your personal
+                    recommendations will
+                    appear here.
+                  </p>
+
+                  <Link
+                    href="/my-rhythm"
+                    className="press-scale mt-4 inline-flex items-center gap-2 rounded-full bg-plum px-4 py-2 text-sm font-semibold text-white hover:bg-plum-deep focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/25"
+                  >
+                    <Plus size={14} />
+                    Build My Collection
+                  </Link>
                 </div>
               )}
             </div>
@@ -270,9 +292,7 @@ export default function HomePage() {
                     key={reminder}
                     className="animate-fade-in italic leading-relaxed text-plum-deep"
                   >
-                    &quot;
-                    {reminder}
-                    &quot;
+                    &quot;{reminder}&quot;
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -291,21 +311,22 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Explore collection */}
           <div className="animate-fade-in-up stagger-4">
             <h2 className="font-display text-lg font-semibold text-ink">
-              Explore a New Rhythm
+              Explore Your Collection
             </h2>
 
             <p className="mb-3 mt-1 text-inkSoft">
-              Want to step outside your usual
-              playlist?
+              Find the right playlist from
+              your personal music space.
             </p>
 
             <Link
               href="/explore"
               className="press-scale group flex w-full items-center justify-center gap-2 rounded-full bg-plum px-4 py-3 text-sm font-semibold text-white shadow-soft hover:bg-plum-deep hover:shadow-elevated focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/25 md:w-auto"
             >
-              Explore genres
+              Explore playlists
 
               <ArrowRight
                 size={16}
@@ -315,6 +336,7 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Desktop information column */}
         <aside className="hidden animate-fade-in-up stagger-2 space-y-6 xl:block">
           <div className="rounded-3xl border border-line bg-plum-soft p-6">
             <div className="mb-3 flex items-center gap-2">
@@ -330,9 +352,9 @@ export default function HomePage() {
 
             <p className="text-sm leading-relaxed text-plum-deep">
               A digital wellness space for
-              nurses to pause, listen, reflect,
-              and reset through the power of
-              music.
+              nurses to pause, listen,
+              reflect, and reset through the
+              power of music.
             </p>
           </div>
 
@@ -355,7 +377,7 @@ export default function HomePage() {
 
                   return (
                     <li
-                      key={step.text}
+                      key={index}
                       className="flex items-start gap-3"
                     >
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-plum-soft text-xs font-bold text-plum-deep">
@@ -381,6 +403,7 @@ export default function HomePage() {
         </aside>
       </div>
 
+      {/* Mobile information modal */}
       <Modal
         open={infoOpen}
         onClose={() =>
@@ -421,7 +444,7 @@ export default function HomePage() {
 
               return (
                 <li
-                  key={step.text}
+                  key={index}
                   className="flex items-start gap-3"
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-plum-soft text-xs font-bold text-plum-deep">
