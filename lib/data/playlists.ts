@@ -1,4 +1,4 @@
-import type { Need } from "./options";
+import type { Genre, Need } from "./options";
 
 export const PLAYLIST_CATEGORIES = [
   "Relax",
@@ -20,11 +20,17 @@ export type Playlist = {
   originalName: string;
   description: string;
   category: PlaylistCategory;
+  genre?: Genre;
   coverImage: string | null;
   trackCount: number | null;
   ownerName: string | null;
   addedAt: string;
 };
+
+export type PlaylistEdits = Pick<
+  Playlist,
+  "name" | "description" | "category" | "genre"
+>;
 
 export type SpotifyPlaylistMetadata = {
   spotifyId: string;

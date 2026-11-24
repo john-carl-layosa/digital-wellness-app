@@ -65,6 +65,8 @@ export default function MyRhythmPage() {
         "To feel comforted"
     );
 
+  const [genreFilter, setGenreFilter] = useState<Genre | "">("");
+
   const [editorOpen, setEditorOpen] =
     useState(false);
 
@@ -107,6 +109,10 @@ export default function MyRhythmPage() {
       ),
     [playlists, activeNeed]
   );
+
+  const visiblePlaylists = genreFilter
+    ? playlists.filter((playlist) => playlist.genre === genreFilter)
+    : playlists;
 
   const openAdd = () => {
     setEditingPlaylist(null);
@@ -247,9 +253,24 @@ export default function MyRhythmPage() {
           )}
         </div>
 
-        {playlists.length ? (
+        <label htmlFor="collection-genre" className="sr-only">
+          Filter playlists by genre
+        </label>
+        <select
+          id="collection-genre"
+          value={genreFilter}
+          onChange={(event) => setGenreFilter(event.target.value as Genre | "")}
+          className="mb-4 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-plum focus:ring-4 focus:ring-plum/10 sm:w-auto"
+        >
+          <option value="">All genres</option>
+          {GENRES.map((genre) => (
+            <option key={genre}>{genre}</option>
+          ))}
+        </select>
+
+        {visiblePlaylists.length ? (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {playlists.map(
+            {visiblePlaylists.map(
               (playlist, index) => (
                 <PlaylistCard
                   key={playlist.id}
@@ -261,18 +282,20 @@ export default function MyRhythmPage() {
                   }
                   disableMoveDown={
                     index ===
-                    playlists.length - 1
+                    visiblePlaylists.length - 1
                   }
                   onMoveUp={() =>
                     movePlaylist(
                       playlist.id,
-                      "up"
+                      "up",
+                      genreFilter || undefined
                     )
                   }
                   onMoveDown={() =>
                     movePlaylist(
                       playlist.id,
-                      "down"
+                      "down",
+                      genreFilter || undefined
                     )
                   }
                   onEdit={() =>
@@ -286,6 +309,15 @@ export default function MyRhythmPage() {
                 />
               )
             )}
+          </div>
+        ) : genreFilter ? (
+          <div className="rounded-3xl border border-dashed border-line bg-surface px-6 py-10 text-center">
+            <p className="mb-4 text-sm text-inkSoft">
+              No playlists saved under {genreFilter}.
+            </p>
+            <PrimaryButton onClick={openAdd} icon={<Plus size={16} />}>
+              Add Playlist
+            </PrimaryButton>
           </div>
         ) : (
           <PlaylistEmptyState
@@ -439,6 +471,7 @@ export default function MyRhythmPage() {
           (item) => item.spotifyId
         )}
         playlist={editingPlaylist}
+        initialGenre={genreFilter || undefined}
       />
 
       <ConfirmDialog
