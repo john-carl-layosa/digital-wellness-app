@@ -1,13 +1,7 @@
 "use client";
 
-import React, {
-  useMemo,
-  useState,
-} from "react";
-import {
-  Plus,
-  Search,
-} from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Plus, Search } from "lucide-react";
 import { useAppData } from "../../../lib/context/AppContext";
 import {
   CATEGORY_DESCRIPTIONS,
@@ -20,42 +14,28 @@ import { PlaylistEditorModal } from "../../../components/PlaylistEditorModal";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { PrimaryButton } from "../../../components/PrimaryButton";
 
-type Filter =
-  | "All"
-  | PlaylistCategory;
+type Filter = "All" | PlaylistCategory;
 
 export default function ExplorePage() {
-  const {
-    playlists,
-    addPlaylist,
-    updatePlaylist,
-  } = useAppData();
+  const { playlists, addPlaylist, updatePlaylist } = useAppData();
 
-  const [activeFilter, setActiveFilter] =
-    useState<Filter>("All");
+  const [activeFilter, setActiveFilter] = useState<Filter>("All");
   const [query, setQuery] = useState("");
-  const [editorOpen, setEditorOpen] =
-    useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const visiblePlaylists = useMemo(() => {
-    const cleanQuery = query
-      .trim()
-      .toLowerCase();
+    const cleanQuery = query.trim().toLowerCase();
 
     return playlists.filter((playlist) => {
-      const matchesCategory =
-        activeFilter === "All" ||
-        playlist.category === activeFilter;
+      const matchesCategory = activeFilter === "All" || playlist.category === activeFilter;
 
       const matchesQuery =
         !cleanQuery ||
-        `${playlist.name} ${playlist.description} ${playlist.category}`
+        `${playlist.name} ${playlist.description} ${playlist.category} ${playlist.genre ?? ""}`
           .toLowerCase()
           .includes(cleanQuery);
 
-      return (
-        matchesCategory && matchesQuery
-      );
+      return matchesCategory && matchesQuery;
     });
   }, [playlists, activeFilter, query]);
 
@@ -68,9 +48,7 @@ export default function ExplorePage() {
         />
 
         <PrimaryButton
-          onClick={() =>
-            setEditorOpen(true)
-          }
+          onClick={() => setEditorOpen(true)}
           icon={<Plus size={16} />}
           className="w-full sm:mt-1 sm:w-auto"
         >
@@ -79,18 +57,11 @@ export default function ExplorePage() {
       </div>
 
       {playlists.length === 0 ? (
-        <PlaylistEmptyState
-          onAdd={() =>
-            setEditorOpen(true)
-          }
-        />
+        <PlaylistEmptyState onAdd={() => setEditorOpen(true)} />
       ) : (
         <>
           <div className="rounded-2xl border border-line bg-surface p-4 shadow-soft">
-            <label
-              htmlFor="playlist-search"
-              className="sr-only"
-            >
+            <label htmlFor="playlist-search" className="sr-only">
               Search your playlists
             </label>
 
@@ -104,11 +75,7 @@ export default function ExplorePage() {
                 id="playlist-search"
                 type="search"
                 value={query}
-                onChange={(event) =>
-                  setQuery(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search your playlists"
                 className="w-full rounded-full border border-line bg-canvasAlt py-3 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-plum focus:ring-4 focus:ring-plum/10"
               />
@@ -118,23 +85,12 @@ export default function ExplorePage() {
               className="no-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1"
               aria-label="Filter playlists by category"
             >
-              {(
-                [
-                  "All",
-                  ...PLAYLIST_CATEGORIES,
-                ] as Filter[]
-              ).map((filter) => (
+              {(["All", ...PLAYLIST_CATEGORIES] as Filter[]).map((filter) => (
                 <button
                   key={filter}
                   type="button"
-                  onClick={() =>
-                    setActiveFilter(
-                      filter
-                    )
-                  }
-                  aria-pressed={
-                    activeFilter === filter
-                  }
+                  onClick={() => setActiveFilter(filter)}
+                  aria-pressed={activeFilter === filter}
                   className={`press-scale shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${
                     activeFilter === filter
                       ? "bg-plum text-white shadow-soft"
@@ -150,49 +106,29 @@ export default function ExplorePage() {
           <div className="mt-6">
             <div className="mb-4">
               <h2 className="font-display text-2xl font-semibold text-ink">
-                {activeFilter === "All"
-                  ? "All Playlists"
-                  : activeFilter}
+                {activeFilter === "All" ? "All Playlists" : activeFilter}
               </h2>
 
               <p className="mt-1 text-sm text-inkSoft">
                 {activeFilter === "All"
-                  ? `${
-                      visiblePlaylists.length
-                    } playlist${
-                      visiblePlaylists.length ===
-                      1
-                        ? ""
-                        : "s"
+                  ? `${visiblePlaylists.length} playlist${
+                      visiblePlaylists.length === 1 ? "" : "s"
                     } in your collection.`
-                  : CATEGORY_DESCRIPTIONS[
-                      activeFilter
-                    ]}
+                  : CATEGORY_DESCRIPTIONS[activeFilter]}
               </p>
             </div>
 
             {visiblePlaylists.length ? (
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {visiblePlaylists.map(
-                  (playlist) => (
-                    <PlaylistCard
-                      key={playlist.id}
-                      playlist={playlist}
-                      fillHeight
-                    />
-                  )
-                )}
+                {visiblePlaylists.map((playlist) => (
+                  <PlaylistCard key={playlist.id} playlist={playlist} fillHeight />
+                ))}
               </div>
             ) : (
               <div className="rounded-3xl border border-dashed border-line bg-surface px-6 py-10 text-center">
-                <p className="font-display text-lg font-semibold text-ink">
-                  No matching playlists
-                </p>
+                <p className="font-display text-lg font-semibold text-ink">No matching playlists</p>
 
-                <p className="mt-1 text-sm text-inkSoft">
-                  Try another search or
-                  category.
-                </p>
+                <p className="mt-1 text-sm text-inkSoft">Try another search or category.</p>
               </div>
             )}
           </div>
@@ -201,15 +137,10 @@ export default function ExplorePage() {
 
       <PlaylistEditorModal
         open={editorOpen}
-        onClose={() =>
-          setEditorOpen(false)
-        }
+        onClose={() => setEditorOpen(false)}
         onAdd={addPlaylist}
         onUpdate={updatePlaylist}
-        existingSpotifyIds={playlists.map(
-          (playlist) =>
-            playlist.spotifyId
-        )}
+        existingSpotifyIds={playlists.map((playlist) => playlist.spotifyId)}
       />
     </div>
   );

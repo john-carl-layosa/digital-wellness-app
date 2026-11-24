@@ -1,21 +1,13 @@
 "use client";
 
-import React, {
-  FormEvent,
-  useEffect,
-  useState,
-} from "react";
-import {
-  ArrowLeft,
-  Check,
-  Link2,
-  Music2,
-  Search,
-} from "lucide-react";
+import React, { FormEvent, useEffect, useState } from "react";
+import { ArrowLeft, Check, Link2, Music2, Search } from "lucide-react";
+import { GENRES, type Genre } from "../lib/data/options";
 import {
   PLAYLIST_CATEGORIES,
   Playlist,
   PlaylistCategory,
+  PlaylistEdits,
   SpotifyPlaylistMetadata,
   extractSpotifyPlaylistId,
 } from "../lib/data/playlists";
@@ -26,28 +18,18 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onAdd: (playlist: Playlist) => void;
-  onUpdate: (
-    id: string,
-    updates: Pick<
-      Playlist,
-      "name" | "description" | "category"
-    >
-  ) => void;
+  onUpdate: (id: string, updates: PlaylistEdits) => void;
   existingSpotifyIds: string[];
   playlist?: Playlist | null;
+  initialGenre?: Genre;
 };
 
 function createId() {
-  if (
-    typeof crypto !== "undefined" &&
-    "randomUUID" in crypto
-  ) {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
 
-  return `playlist-${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2)}`;
+  return `playlist-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function PlaylistEditorModal({
@@ -57,23 +39,17 @@ export function PlaylistEditorModal({
   onUpdate,
   existingSpotifyIds,
   playlist = null,
+  initialGenre,
 }: Props) {
   const editing = Boolean(playlist);
 
   const [url, setUrl] = useState("");
-  const [metadata, setMetadata] =
-    useState<SpotifyPlaylistMetadata | null>(
-      null
-    );
+  const [metadata, setMetadata] = useState<SpotifyPlaylistMetadata | null>(null);
   const [name, setName] = useState("");
-  const [description, setDescription] =
-    useState("");
-  const [category, setCategory] =
-    useState<PlaylistCategory>(
-      "Personal Favorites"
-    );
-  const [loading, setLoading] =
-    useState(false);
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<PlaylistCategory>("Personal Favorites");
+  const [genre, setGenre] = useState<Genre | "">("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -84,93 +60,65 @@ export function PlaylistEditorModal({
     setUrl("");
     setMetadata(null);
     setName(playlist?.name ?? "");
-    setDescription(
-      playlist?.description ?? ""
-    );
-    setCategory(
-      playlist?.category ??
-        "Personal Favorites"
-    );
+    setDescription(playlist?.description ?? "");
+    setCategory(playlist?.category ?? "Personal Favorites");
+    setGenre((playlist ? playlist.genre : initialGenre) ?? "");
     setLoading(false);
     setError("");
-  }, [open, playlist]);
+  }, [open, playlist, initialGenre]);
 
-  const findPlaylist = async (
-    event: FormEvent
-  ) => {
+  const findPlaylist = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
 
-    const spotifyId =
-      extractSpotifyPlaylistId(url);
+    const spotifyId = extractSpotifyPlaylistId(url);
 
     if (!spotifyId) {
-      setError(
-        "Paste a valid Spotify playlist link."
-      );
+      setError("Paste a valid Spotify playlist link.");
       return;
     }
 
-    if (
-      existingSpotifyIds.includes(spotifyId)
-    ) {
-      setError(
-        "This playlist is already in your collection."
-      );
+    if (existingSpotifyIds.includes(spotifyId)) {
+      setError("This playlist is already in your collection.");
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "/api/spotify/playlist",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ url }),
-        }
-      );
+      const response = await fetch("/api/spotify/playlist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+      });
 
-      const data =
-        (await response.json()) as SpotifyPlaylistMetadata & {
-          error?: string;
-        };
+      const data = (await response.json()) as SpotifyPlaylistMetadata & {
+        error?: string;
+      };
 
       if (!response.ok) {
-        throw new Error(
-          data.error ||
-            "Could not read this playlist."
-        );
+        throw new Error(data.error || "Could not read this playlist.");
       }
 
       setMetadata(data);
       setName(data.name);
       setDescription(data.description);
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Could not read this playlist."
-      );
+      setError(caught instanceof Error ? caught.message : "Could not read this playlist.");
     } finally {
       setLoading(false);
     }
   };
 
-  const savePlaylist = (
-    event: FormEvent
-  ) => {
+  const savePlaylist = (event: FormEvent) => {
     event.preventDefault();
 
     const cleanName = name.trim();
 
     if (!cleanName) {
-      setError(
-        "Give your playlist a name."
-      );
+      setError("Give your playlist a name.");
       return;
     }
 
@@ -179,6 +127,7 @@ export function PlaylistEditorModal({
         name: cleanName,
         description: description.trim(),
         category,
+        genre: genre || undefined,
       });
 
       onClose();
@@ -197,6 +146,7 @@ export function PlaylistEditorModal({
       originalName: metadata.name,
       description: description.trim(),
       category,
+      genre: genre || undefined,
       coverImage: metadata.coverImage,
       trackCount: metadata.trackCount,
       ownerName: metadata.ownerName,
@@ -207,18 +157,13 @@ export function PlaylistEditorModal({
   };
 
   const preview = playlist ?? metadata;
-  const showDetails =
-    editing || Boolean(metadata);
+  const showDetails = editing || Boolean(metadata);
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={
-        editing
-          ? "Edit Playlist"
-          : "Add from Spotify"
-      }
+      title={editing ? "Edit Playlist" : "Add from Spotify"}
       widthClassName="max-w-xl"
     >
       {!showDetails ? (
@@ -230,23 +175,17 @@ export function PlaylistEditorModal({
               </span>
 
               <div>
-                <h3 className="font-semibold text-ink">
-                  Paste a Spotify playlist link
-                </h3>
+                <h3 className="font-semibold text-ink">Paste a Spotify playlist link</h3>
 
                 <p className="mt-1 text-sm leading-relaxed text-inkSoft">
-                  It can be yours or a playlist
-                  shared by another Spotify user,
-                  as long as Spotify can access it.
+                  It can be yours or a playlist shared by another Spotify user, as long as Spotify can
+                  access it.
                 </p>
               </div>
             </div>
           </div>
 
-          <label
-            htmlFor="spotify-playlist-url"
-            className="mt-5 block text-sm font-semibold text-ink"
-          >
+          <label htmlFor="spotify-playlist-url" className="mt-5 block text-sm font-semibold text-ink">
             Spotify playlist link
           </label>
 
@@ -256,37 +195,24 @@ export function PlaylistEditorModal({
             inputMode="url"
             autoComplete="url"
             value={url}
-            onChange={(event) =>
-              setUrl(event.target.value)
-            }
+            onChange={(event) => setUrl(event.target.value)}
             placeholder="https://open.spotify.com/playlist/..."
             className="mt-2 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-plum focus:ring-4 focus:ring-plum/10"
             required
           />
 
           {error && (
-            <p
-              role="alert"
-              className="mt-2 text-sm text-danger"
-            >
+            <p role="alert" className="mt-2 text-sm text-danger">
               {error}
             </p>
           )}
 
           <div className="mt-6 flex justify-end gap-2">
-            <PrimaryButton
-              type="button"
-              variant="outline"
-              onClick={onClose}
-            >
+            <PrimaryButton type="button" variant="outline" onClick={onClose}>
               Cancel
             </PrimaryButton>
 
-            <PrimaryButton
-              type="submit"
-              loading={loading}
-              icon={<Search size={16} />}
-            >
+            <PrimaryButton type="submit" loading={loading} icon={<Search size={16} />}>
               Find Playlist
             </PrimaryButton>
           </div>
@@ -297,11 +223,7 @@ export function PlaylistEditorModal({
             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-plum-soft">
               {preview?.coverImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={preview.coverImage}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
+                <img src={preview.coverImage} alt="" className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full items-center justify-center text-plum">
                   <Music2 size={25} />
@@ -310,40 +232,28 @@ export function PlaylistEditorModal({
             </div>
 
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-plum">
-                Found on Spotify
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-plum">Found on Spotify</p>
 
               <p className="mt-1 truncate font-display text-lg font-semibold text-ink">
-                {playlist?.originalName ??
-                  metadata?.name}
+                {playlist?.originalName ?? metadata?.name}
               </p>
 
-              {preview?.trackCount !== null &&
-                preview?.trackCount !==
-                  undefined && (
-                  <p className="mt-1 text-xs text-inkSoft">
-                    {preview.trackCount} tracks
-                  </p>
-                )}
+              {preview?.trackCount !== null && preview?.trackCount !== undefined && (
+                <p className="mt-1 text-xs text-inkSoft">{preview.trackCount} tracks</p>
+              )}
             </div>
           </div>
 
           <div className="mt-5 grid gap-4">
             <div>
-              <label
-                htmlFor="playlist-name"
-                className="text-sm font-semibold text-ink"
-              >
+              <label htmlFor="playlist-name" className="text-sm font-semibold text-ink">
                 Display name
               </label>
 
               <input
                 id="playlist-name"
                 value={name}
-                onChange={(event) =>
-                  setName(event.target.value)
-                }
+                onChange={(event) => setName(event.target.value)}
                 maxLength={80}
                 className="mt-2 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-plum focus:ring-4 focus:ring-plum/10"
                 required
@@ -351,70 +261,61 @@ export function PlaylistEditorModal({
             </div>
 
             <div>
-              <label
-                htmlFor="playlist-description"
-                className="text-sm font-semibold text-ink"
-              >
-                Purpose or description{" "}
-                <span className="font-normal text-inkSoft">
-                  (optional)
-                </span>
+              <label htmlFor="playlist-description" className="text-sm font-semibold text-ink">
+                Purpose or description <span className="font-normal text-inkSoft">(optional)</span>
               </label>
 
               <textarea
                 id="playlist-description"
                 value={description}
-                onChange={(event) =>
-                  setDescription(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => setDescription(event.target.value)}
                 maxLength={180}
                 rows={3}
                 placeholder="When or why do you listen to this playlist?"
                 className="mt-2 w-full resize-none rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-plum focus:ring-4 focus:ring-plum/10"
               />
 
-              <p className="mt-1 text-right text-xs text-inkSoft">
-                {description.length}/180
-              </p>
+              <p className="mt-1 text-right text-xs text-inkSoft">{description.length}/180</p>
             </div>
 
             <div>
-              <label
-                htmlFor="playlist-category"
-                className="text-sm font-semibold text-ink"
-              >
+              <label htmlFor="playlist-category" className="text-sm font-semibold text-ink">
                 Mood or category
               </label>
 
               <select
                 id="playlist-category"
                 value={category}
-                onChange={(event) =>
-                  setCategory(
-                    event.target
-                      .value as PlaylistCategory
-                  )
-                }
+                onChange={(event) => setCategory(event.target.value as PlaylistCategory)}
                 className="mt-2 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-plum focus:ring-4 focus:ring-plum/10"
               >
-                {PLAYLIST_CATEGORIES.map(
-                  (option) => (
-                    <option key={option}>
-                      {option}
-                    </option>
-                  )
-                )}
+                {PLAYLIST_CATEGORIES.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="playlist-genre" className="text-sm font-semibold text-ink">
+                Genre
+              </label>
+
+              <select
+                id="playlist-genre"
+                value={genre}
+                onChange={(event) => setGenre(event.target.value as Genre | "")}
+                className="mt-2 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-plum focus:ring-4 focus:ring-plum/10"
+              >
+                <option value="">No genre</option>
+                {GENRES.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
               </select>
             </div>
           </div>
 
           {error && (
-            <p
-              role="alert"
-              className="mt-3 text-sm text-danger"
-            >
+            <p role="alert" className="mt-3 text-sm text-danger">
               {error}
             </p>
           )}
@@ -437,21 +338,12 @@ export function PlaylistEditorModal({
             )}
 
             <div className="flex justify-end gap-2">
-              <PrimaryButton
-                type="button"
-                variant="outline"
-                onClick={onClose}
-              >
+              <PrimaryButton type="button" variant="outline" onClick={onClose}>
                 Cancel
               </PrimaryButton>
 
-              <PrimaryButton
-                type="submit"
-                icon={<Check size={16} />}
-              >
-                {editing
-                  ? "Save Changes"
-                  : "Add Playlist"}
+              <PrimaryButton type="submit" icon={<Check size={16} />}>
+                {editing ? "Save Changes" : "Add Playlist"}
               </PrimaryButton>
             </div>
           </div>

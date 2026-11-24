@@ -1,13 +1,5 @@
 import React from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  ExternalLink,
-  ListMusic,
-  Music2,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, ListMusic, Music2, Pencil, Trash2 } from "lucide-react";
 import type { Playlist } from "../lib/data/playlists";
 
 type Props = {
@@ -35,15 +27,9 @@ export function PlaylistCard({
 }: Props) {
   const metadata = [
     playlist.trackCount !== null
-      ? `${playlist.trackCount} ${
-          playlist.trackCount === 1
-            ? "track"
-            : "tracks"
-        }`
+      ? `${playlist.trackCount} ${playlist.trackCount === 1 ? "track" : "tracks"}`
       : null,
-    playlist.ownerName
-      ? `by ${playlist.ownerName}`
-      : null,
+    playlist.ownerName ? `by ${playlist.ownerName}` : null,
   ].filter(Boolean);
 
   return (
@@ -62,22 +48,18 @@ export function PlaylistCard({
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-gradient-to-br from-plum-soft to-canvasAlt">
-            <Music2
-              size={34}
-              className="text-plum"
-            />
+            <Music2 size={34} className="text-plum" />
           </div>
         )}
 
         <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-plum-deep shadow-soft backdrop-blur-sm">
           {playlist.category}
+          {playlist.genre && ` · ${playlist.genre}`}
         </span>
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-display text-lg font-semibold leading-snug text-ink">
-          {playlist.name}
-        </h3>
+        <h3 className="font-display text-lg font-semibold leading-snug text-ink">{playlist.name}</h3>
 
         {metadata.length > 0 && (
           <p className="mt-1 flex items-center gap-1.5 text-xs text-inkSoft">
@@ -87,8 +69,7 @@ export function PlaylistCard({
         )}
 
         <p className="mb-4 mt-2 text-sm leading-relaxed text-inkSoft">
-          {playlist.description ||
-            "A playlist saved in your personal music space."}
+          {playlist.description || "A playlist saved in your personal music space."}
         </p>
 
         <div className="mt-auto flex flex-wrap items-center gap-2">
@@ -103,10 +84,7 @@ export function PlaylistCard({
           </a>
 
           {manageable && (
-            <div
-              className="ml-auto flex items-center gap-1"
-              aria-label="Playlist actions"
-            >
+            <div className="ml-auto flex items-center gap-1" aria-label="Playlist actions">
               <button
                 type="button"
                 onClick={onMoveUp}

@@ -1,15 +1,7 @@
 "use client";
 
-import React, {
-  useMemo,
-  useState,
-} from "react";
-import {
-  Check,
-  Pencil,
-  Plus,
-  X,
-} from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Check, Pencil, Plus, X } from "lucide-react";
 import { useAppData } from "../../../lib/context/AppContext";
 import {
   GENRES,
@@ -31,19 +23,12 @@ import { ChoiceCard } from "../../../components/ChoiceCard";
 import { PrimaryButton } from "../../../components/PrimaryButton";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 
-function findPauseNeedForNeed(
-  need: Need | null
-): PauseNeed | null {
+function findPauseNeedForNeed(need: Need | null): PauseNeed | null {
   if (!need) {
     return null;
   }
 
-  return (
-    PAUSE_NEEDS.find(
-      (item) =>
-        PAUSE_NEED_TO_NEED[item.key] === need
-    )?.key ?? null
-  );
+  return PAUSE_NEEDS.find((item) => PAUSE_NEED_TO_NEED[item.key] === need)?.key ?? null;
 }
 
 export default function MyRhythmPage() {
@@ -58,64 +43,36 @@ export default function MyRhythmPage() {
     movePlaylist,
   } = useAppData();
 
-  const [selectedMood, setSelectedMood] =
-    useState<PauseNeed | null>(
-      () =>
-        findPauseNeedForNeed(defaultNeed) ??
-        "To feel comforted"
-    );
+  const [selectedMood, setSelectedMood] = useState<PauseNeed | null>(
+    () => findPauseNeedForNeed(defaultNeed) ?? "To feel comforted",
+  );
 
-  const [editorOpen, setEditorOpen] =
-    useState(false);
+  const [genreFilter, setGenreFilter] = useState<Genre | "">("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
+  const [removingPlaylist, setRemovingPlaylist] = useState<Playlist | null>(null);
+  const [editingPreferences, setEditingPreferences] = useState(false);
+  const [draftGenres, setDraftGenres] = useState<Genre[]>(favoriteGenres);
+  const [draftNeed, setDraftNeed] = useState<Need | null>(defaultNeed);
 
-  const [
-    editingPlaylist,
-    setEditingPlaylist,
-  ] = useState<Playlist | null>(null);
-
-  const [
-    removingPlaylist,
-    setRemovingPlaylist,
-  ] = useState<Playlist | null>(null);
-
-  const [
-    editingPreferences,
-    setEditingPreferences,
-  ] = useState(false);
-
-  const [draftGenres, setDraftGenres] =
-    useState<Genre[]>(favoriteGenres);
-
-  const [draftNeed, setDraftNeed] =
-    useState<Need | null>(defaultNeed);
-
-  const activeNeed = selectedMood
-    ? PAUSE_NEED_TO_NEED[selectedMood]
-    : defaultNeed ?? "Comfort";
-
-  const activeMoodLabel =
-    PAUSE_NEEDS.find(
-      (item) => item.key === selectedMood
-    )?.label ?? "Comfort";
+  const activeNeed = selectedMood ? PAUSE_NEED_TO_NEED[selectedMood] : (defaultNeed ?? "Comfort");
+  const activeMoodLabel = PAUSE_NEEDS.find((item) => item.key === selectedMood)?.label ?? "Comfort";
 
   const recommendations = useMemo(
-    () =>
-      getRecommendationsForNeed(
-        playlists,
-        activeNeed,
-        3
-      ),
-    [playlists, activeNeed]
+    () => getRecommendationsForNeed(playlists, activeNeed, 3),
+    [playlists, activeNeed],
   );
+
+  const visiblePlaylists = genreFilter
+    ? playlists.filter((playlist) => playlist.genre === genreFilter)
+    : playlists;
 
   const openAdd = () => {
     setEditingPlaylist(null);
     setEditorOpen(true);
   };
 
-  const openEdit = (
-    playlist: Playlist
-  ) => {
+  const openEdit = (playlist: Playlist) => {
     setEditingPlaylist(playlist);
     setEditorOpen(true);
   };
@@ -131,23 +88,14 @@ export default function MyRhythmPage() {
     setEditingPreferences(true);
   };
 
-  const toggleDraftGenre = (
-    genre: Genre
-  ) => {
+  const toggleDraftGenre = (genre: Genre) => {
     setDraftGenres((current) =>
-      current.includes(genre)
-        ? current.filter(
-            (item) => item !== genre
-          )
-        : [...current, genre]
+      current.includes(genre) ? current.filter((item) => item !== genre) : [...current, genre],
     );
   };
 
   const savePreferences = () => {
-    updatePreferences(
-      draftGenres,
-      draftNeed ?? "Comfort"
-    );
+    updatePreferences(draftGenres, draftNeed ?? "Comfort");
 
     setEditingPreferences(false);
   };
@@ -155,10 +103,7 @@ export default function MyRhythmPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <ScreenHeader
-          title="My Rhythm"
-          subtitle="Your personal music space, shaped by you."
-        />
+        <ScreenHeader title="My Rhythm" subtitle="Your personal music space, shaped by you." />
 
         <PrimaryButton
           onClick={openAdd}
@@ -170,73 +115,46 @@ export default function MyRhythmPage() {
       </div>
 
       <section aria-labelledby="right-now-heading">
-        <h2
-          id="right-now-heading"
-          className="font-display text-lg font-semibold text-ink"
-        >
+        <h2 id="right-now-heading" className="font-display text-lg font-semibold text-ink">
           What do you need right now?
         </h2>
 
-        <MoodPicker
-          selected={selectedMood}
-          onSelect={setSelectedMood}
-          className="mt-3"
-        />
+        <MoodPicker selected={selectedMood} onSelect={setSelectedMood} className="mt-3" />
 
         <div className="mt-6">
           <h3 className="mb-3 font-display text-lg font-semibold text-ink">
-            From your collection:{" "}
-            <span className="text-plum-deep">
-              {activeMoodLabel}
-            </span>
+            From your collection: <span className="text-plum-deep">{activeMoodLabel}</span>
           </h3>
 
           {recommendations.length ? (
             <div className="grid gap-4 md:grid-cols-3">
-              {recommendations.map(
-                (playlist, index) => (
-                  <div
-                    key={playlist.id}
-                    style={{
-                      animationDelay: `${
-                        index * 60
-                      }ms`,
-                    }}
-                    className="animate-fade-in-up"
-                  >
-                    <PlaylistCard
-                      playlist={playlist}
-                      fillHeight
-                    />
-                  </div>
-                )
-              )}
+              {recommendations.map((playlist, index) => (
+                <div
+                  key={playlist.id}
+                  style={{
+                    animationDelay: `${index * 60}ms`,
+                  }}
+                  className="animate-fade-in-up"
+                >
+                  <PlaylistCard playlist={playlist} fillHeight />
+                </div>
+              ))}
             </div>
           ) : (
-            <PlaylistEmptyState
-              onAdd={openAdd}
-              compact
-            />
+            <PlaylistEmptyState onAdd={openAdd} compact />
           )}
         </div>
       </section>
 
-      <section
-        className="mt-10"
-        aria-labelledby="collection-heading"
-      >
+      <section className="mt-10" aria-labelledby="collection-heading">
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
-            <h2
-              id="collection-heading"
-              className="font-display text-2xl font-semibold text-ink"
-            >
+            <h2 id="collection-heading" className="font-display text-2xl font-semibold text-ink">
               My Playlist Collection
             </h2>
 
             <p className="mt-1 text-sm text-inkSoft">
-              Edit the details or use the arrows
-              to arrange your playlists.
+              Edit the details or use the arrows to arrange your playlists.
             </p>
           </div>
 
@@ -247,50 +165,47 @@ export default function MyRhythmPage() {
           )}
         </div>
 
-        {playlists.length ? (
+        <label htmlFor="collection-genre" className="sr-only">
+          Filter playlists by genre
+        </label>
+        <select
+          id="collection-genre"
+          value={genreFilter}
+          onChange={(event) => setGenreFilter(event.target.value as Genre | "")}
+          className="mb-4 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-plum focus:ring-4 focus:ring-plum/10 sm:w-auto"
+        >
+          <option value="">All genres</option>
+          {GENRES.map((genre) => (
+            <option key={genre}>{genre}</option>
+          ))}
+        </select>
+
+        {visiblePlaylists.length ? (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {playlists.map(
-              (playlist, index) => (
-                <PlaylistCard
-                  key={playlist.id}
-                  playlist={playlist}
-                  fillHeight
-                  manageable
-                  disableMoveUp={
-                    index === 0
-                  }
-                  disableMoveDown={
-                    index ===
-                    playlists.length - 1
-                  }
-                  onMoveUp={() =>
-                    movePlaylist(
-                      playlist.id,
-                      "up"
-                    )
-                  }
-                  onMoveDown={() =>
-                    movePlaylist(
-                      playlist.id,
-                      "down"
-                    )
-                  }
-                  onEdit={() =>
-                    openEdit(playlist)
-                  }
-                  onRemove={() =>
-                    setRemovingPlaylist(
-                      playlist
-                    )
-                  }
-                />
-              )
-            )}
+            {visiblePlaylists.map((playlist, index) => (
+              <PlaylistCard
+                key={playlist.id}
+                playlist={playlist}
+                fillHeight
+                manageable
+                disableMoveUp={index === 0}
+                disableMoveDown={index === visiblePlaylists.length - 1}
+                onMoveUp={() => movePlaylist(playlist.id, "up", genreFilter || undefined)}
+                onMoveDown={() => movePlaylist(playlist.id, "down", genreFilter || undefined)}
+                onEdit={() => openEdit(playlist)}
+                onRemove={() => setRemovingPlaylist(playlist)}
+              />
+            ))}
+          </div>
+        ) : genreFilter ? (
+          <div className="rounded-3xl border border-dashed border-line bg-surface px-6 py-10 text-center">
+            <p className="mb-4 text-sm text-inkSoft">No playlists saved under {genreFilter}.</p>
+            <PrimaryButton onClick={openAdd} icon={<Plus size={16} />}>
+              Add Playlist
+            </PrimaryButton>
           </div>
         ) : (
-          <PlaylistEmptyState
-            onAdd={openAdd}
-          />
+          <PlaylistEmptyState onAdd={openAdd} />
         )}
       </section>
 
@@ -299,19 +214,14 @@ export default function MyRhythmPage() {
         aria-labelledby="preferences-heading"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2
-            id="preferences-heading"
-            className="font-display text-lg font-semibold text-ink"
-          >
+          <h2 id="preferences-heading" className="font-display text-lg font-semibold text-ink">
             Your Listening Preferences
           </h2>
 
           {!editingPreferences && (
             <button
               type="button"
-              onClick={
-                startEditingPreferences
-              }
+              onClick={startEditingPreferences}
               className="press-scale flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-plum hover:bg-plum-soft"
             >
               <Pencil size={14} />
@@ -329,20 +239,16 @@ export default function MyRhythmPage() {
 
               <div className="flex flex-wrap gap-2">
                 {favoriteGenres.length ? (
-                  favoriteGenres.map(
-                    (genre) => (
-                      <span
-                        key={genre}
-                        className="rounded-full bg-plum-soft px-3 py-1.5 text-xs font-medium text-plum-deep"
-                      >
-                        {genre}
-                      </span>
-                    )
-                  )
+                  favoriteGenres.map((genre) => (
+                    <span
+                      key={genre}
+                      className="rounded-full bg-plum-soft px-3 py-1.5 text-xs font-medium text-plum-deep"
+                    >
+                      {genre}
+                    </span>
+                  ))
                 ) : (
-                  <p className="text-sm text-inkSoft">
-                    No genres saved yet.
-                  </p>
+                  <p className="text-sm text-inkSoft">No genres saved yet.</p>
                 )}
               </div>
             </div>
@@ -353,8 +259,7 @@ export default function MyRhythmPage() {
               </p>
 
               <span className="rounded-full bg-plum-soft px-3 py-1.5 text-xs font-medium text-plum-deep">
-                {defaultNeed ??
-                  "Not set yet"}
+                {defaultNeed ?? "Not set yet"}
               </span>
             </div>
           </div>
@@ -371,14 +276,8 @@ export default function MyRhythmPage() {
                     key={genre}
                     label={genre}
                     compact
-                    selected={draftGenres.includes(
-                      genre
-                    )}
-                    onClick={() =>
-                      toggleDraftGenre(
-                        genre
-                      )
-                    }
+                    selected={draftGenres.includes(genre)}
+                    onClick={() => toggleDraftGenre(genre)}
                   />
                 ))}
               </div>
@@ -395,32 +294,21 @@ export default function MyRhythmPage() {
                     key={need}
                     label={need}
                     compact
-                    selected={
-                      draftNeed === need
-                    }
-                    onClick={() =>
-                      setDraftNeed(need)
-                    }
+                    selected={draftNeed === need}
+                    onClick={() => setDraftNeed(need)}
                   />
                 ))}
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <PrimaryButton
-                onClick={savePreferences}
-                icon={<Check size={16} />}
-              >
+              <PrimaryButton onClick={savePreferences} icon={<Check size={16} />}>
                 Save Preferences
               </PrimaryButton>
 
               <PrimaryButton
                 variant="outline"
-                onClick={() =>
-                  setEditingPreferences(
-                    false
-                  )
-                }
+                onClick={() => setEditingPreferences(false)}
                 icon={<X size={16} />}
               >
                 Cancel
@@ -435,10 +323,9 @@ export default function MyRhythmPage() {
         onClose={closeEditor}
         onAdd={addPlaylist}
         onUpdate={updatePlaylist}
-        existingSpotifyIds={playlists.map(
-          (item) => item.spotifyId
-        )}
+        existingSpotifyIds={playlists.map((item) => item.spotifyId)}
         playlist={editingPlaylist}
+        initialGenre={genreFilter || undefined}
       />
 
       <ConfirmDialog
@@ -450,14 +337,10 @@ export default function MyRhythmPage() {
             : ""
         }
         confirmLabel="Remove"
-        onCancel={() =>
-          setRemovingPlaylist(null)
-        }
+        onCancel={() => setRemovingPlaylist(null)}
         onConfirm={() => {
           if (removingPlaylist) {
-            deletePlaylist(
-              removingPlaylist.id
-            );
+            deletePlaylist(removingPlaylist.id);
           }
 
           setRemovingPlaylist(null);
