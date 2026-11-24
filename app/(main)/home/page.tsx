@@ -94,7 +94,6 @@ export default function HomePage() {
     setReminder(pickReminder());
   }, []);
 
-  // Use the playlists added by the user.
   // The assigned mood/category determines
   // which playlist is recommended.
   useEffect(() => {

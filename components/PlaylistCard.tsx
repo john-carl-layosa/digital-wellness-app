@@ -71,6 +71,7 @@ export function PlaylistCard({
 
         <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-plum-deep shadow-soft backdrop-blur-sm">
           {playlist.category}
+          {playlist.genre && ` · ${playlist.genre}`}
         </span>
       </div>
 

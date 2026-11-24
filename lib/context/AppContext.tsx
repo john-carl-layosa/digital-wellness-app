@@ -21,10 +21,12 @@ import {
   WELLNESS_FOCUS_OPTIONS,
   UserProfile,
 } from "../data/profileOptions";
+import { createDefaultPlaylists } from "../data/defaultPlaylists";
 import {
   PLAYLIST_CATEGORIES,
   Playlist,
   PlaylistCategory,
+  PlaylistEdits,
 } from "../data/playlists";
 
 export type PauseReflection = {
@@ -46,7 +48,7 @@ export type ResetEntry = {
 };
 
 type AppState = {
-  schemaVersion: 3;
+  schemaVersion: 4;
   onboardingComplete: boolean;
   profile: UserProfile;
   favoriteGenres: Genre[];
@@ -70,15 +72,13 @@ type AppContextValue = AppState & {
   addPlaylist: (playlist: Playlist) => void;
   updatePlaylist: (
     id: string,
-    updates: Pick<
-      Playlist,
-      "name" | "description" | "category"
-    >
+    updates: PlaylistEdits
   ) => void;
   deletePlaylist: (id: string) => void;
   movePlaylist: (
     id: string,
-    direction: "up" | "down"
+    direction: "up" | "down",
+    genre?: Genre
   ) => void;
   addPauseReflection: (
     reflection: Omit<
@@ -96,8 +96,10 @@ type AppContextValue = AppState & {
 
 const STORAGE_KEY = "rhythms-of-relief:v1";
 
-const createDefaultState = (): AppState => ({
-  schemaVersion: 3,
+const createDefaultState = (
+  playlists = createDefaultPlaylists()
+): AppState => ({
+  schemaVersion: 4,
   onboardingComplete: false,
   profile: {
     ...DEFAULT_USER_PROFILE,
@@ -105,7 +107,7 @@ const createDefaultState = (): AppState => ({
   },
   favoriteGenres: [],
   defaultNeed: null,
-  playlists: [],
+  playlists,
   pauseReflections: [],
   resetEntries: [],
 });
@@ -216,7 +218,7 @@ function normalizeStoredState(
       ? (raw.defaultNeed as Need)
       : null;
 
-  const playlists = Array.isArray(raw.playlists)
+  const storedPlaylists = Array.isArray(raw.playlists)
     ? raw.playlists.flatMap(
         (value): Playlist[] => {
           if (!isRecord(value)) {
@@ -254,6 +256,11 @@ function normalizeStoredState(
                   : "",
               category:
                 category as PlaylistCategory,
+              genre:
+                typeof value.genre === "string" &&
+                GENRES.includes(value.genre as Genre)
+                  ? (value.genre as Genre)
+                  : undefined,
               coverImage:
                 typeof value.coverImage === "string"
                   ? value.coverImage
@@ -276,14 +283,32 @@ function normalizeStoredState(
       )
     : [];
 
+  let playlists = storedPlaylists;
+
+  // Version 4 collections can intentionally be empty after deletions.
+  if (raw.schemaVersion !== 4) {
+    const defaults = createDefaultPlaylists();
+    const defaultsById = new Map(
+      defaults.map((playlist) => [playlist.spotifyId, playlist])
+    );
+    const savedIds = new Set(storedPlaylists.map((playlist) => playlist.spotifyId));
+
+    playlists = [
+      ...storedPlaylists.map((playlist) => ({
+        ...playlist,
+        genre: playlist.genre ?? defaultsById.get(playlist.spotifyId)?.genre,
+      })),
+      ...defaults.filter((playlist) => !savedIds.has(playlist.spotifyId)),
+    ];
+  }
+
   return {
-    ...createDefaultState(),
+    ...createDefaultState(playlists),
     onboardingComplete:
       raw.onboardingComplete === true,
     profile: normalizeProfile(raw.profile),
     favoriteGenres,
     defaultNeed,
-    playlists,
     pauseReflections: Array.isArray(
       raw.pauseReflections
     )
@@ -306,7 +331,7 @@ export function AppProvider({
   children: React.ReactNode;
 }) {
   const [state, setState] =
-    useState<AppState>(createDefaultState);
+    useState<AppState>(() => createDefaultState());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -395,10 +420,7 @@ export function AppProvider({
 
   const updatePlaylist = (
     id: string,
-    updates: Pick<
-      Playlist,
-      "name" | "description" | "category"
-    >
+    updates: PlaylistEdits
   ) => {
     updateState((current) => ({
       ...current,
@@ -425,23 +447,29 @@ export function AppProvider({
 
   const movePlaylist = (
     id: string,
-    direction: "up" | "down"
+    direction: "up" | "down",
+    genre?: Genre
   ) => {
     updateState((current) => {
       const index = current.playlists.findIndex(
         (playlist) => playlist.id === id
       );
 
-      const nextIndex =
-        direction === "up"
-          ? index - 1
-          : index + 1;
+      if (index < 0) {
+        return current;
+      }
 
-      if (
-        index < 0 ||
-        nextIndex < 0 ||
-        nextIndex >= current.playlists.length
-      ) {
+      const step = direction === "up" ? -1 : 1;
+      let nextIndex = index + step;
+
+      while (nextIndex >= 0 && nextIndex < current.playlists.length) {
+        if (!genre || current.playlists[nextIndex].genre === genre) {
+          break;
+        }
+        nextIndex += step;
+      }
+
+      if (nextIndex < 0 || nextIndex >= current.playlists.length) {
         return current;
       }
 

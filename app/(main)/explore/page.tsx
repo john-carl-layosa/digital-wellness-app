@@ -49,7 +49,7 @@ export default function ExplorePage() {
 
       const matchesQuery =
         !cleanQuery ||
-        `${playlist.name} ${playlist.description} ${playlist.category}`
+        `${playlist.name} ${playlist.description} ${playlist.category} ${playlist.genre ?? ""}`
           .toLowerCase()
           .includes(cleanQuery);
 

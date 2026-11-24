@@ -12,10 +12,12 @@ import {
   Music2,
   Search,
 } from "lucide-react";
+import { GENRES, type Genre } from "../lib/data/options";
 import {
   PLAYLIST_CATEGORIES,
   Playlist,
   PlaylistCategory,
+  PlaylistEdits,
   SpotifyPlaylistMetadata,
   extractSpotifyPlaylistId,
 } from "../lib/data/playlists";
@@ -28,13 +30,11 @@ type Props = {
   onAdd: (playlist: Playlist) => void;
   onUpdate: (
     id: string,
-    updates: Pick<
-      Playlist,
-      "name" | "description" | "category"
-    >
+    updates: PlaylistEdits
   ) => void;
   existingSpotifyIds: string[];
   playlist?: Playlist | null;
+  initialGenre?: Genre;
 };
 
 function createId() {
@@ -57,6 +57,7 @@ export function PlaylistEditorModal({
   onUpdate,
   existingSpotifyIds,
   playlist = null,
+  initialGenre,
 }: Props) {
   const editing = Boolean(playlist);
 
@@ -72,6 +73,7 @@ export function PlaylistEditorModal({
     useState<PlaylistCategory>(
       "Personal Favorites"
     );
+  const [genre, setGenre] = useState<Genre | "">("");
   const [loading, setLoading] =
     useState(false);
   const [error, setError] = useState("");
@@ -91,9 +93,10 @@ export function PlaylistEditorModal({
       playlist?.category ??
         "Personal Favorites"
     );
+    setGenre((playlist ? playlist.genre : initialGenre) ?? "");
     setLoading(false);
     setError("");
-  }, [open, playlist]);
+  }, [open, playlist, initialGenre]);
 
   const findPlaylist = async (
     event: FormEvent
@@ -179,6 +182,7 @@ export function PlaylistEditorModal({
         name: cleanName,
         description: description.trim(),
         category,
+        genre: genre || undefined,
       });
 
       onClose();
@@ -197,6 +201,7 @@ export function PlaylistEditorModal({
       originalName: metadata.name,
       description: description.trim(),
       category,
+      genre: genre || undefined,
       coverImage: metadata.coverImage,
       trackCount: metadata.trackCount,
       ownerName: metadata.ownerName,
@@ -406,6 +411,27 @@ export function PlaylistEditorModal({
                     </option>
                   )
                 )}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="playlist-genre"
+                className="text-sm font-semibold text-ink"
+              >
+                Genre
+              </label>
+
+              <select
+                id="playlist-genre"
+                value={genre}
+                onChange={(event) => setGenre(event.target.value as Genre | "")}
+                className="mt-2 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-plum focus:ring-4 focus:ring-plum/10"
+              >
+                <option value="">No genre</option>
+                {GENRES.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
               </select>
             </div>
           </div>
