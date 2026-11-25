@@ -2,11 +2,13 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Music2, ArrowRight, Map } from "lucide-react";
+import { Music2, ArrowRight, Map, MessageSquare } from "lucide-react";
 import { RESET_TAKEAWAYS, RESET_WHEN_OPTIONS } from "../../../lib/data/options";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { PrimaryButton } from "../../../components/PrimaryButton";
 import { useAppData } from "../../../lib/context/AppContext";
+
+const feedbackFormUrl = process.env.NEXT_PUBLIC_FEEDBACK_FORM_URL?.trim();
 
 export default function ResetPage() {
   const { addResetEntry, resetEntries } = useAppData();
@@ -52,6 +54,19 @@ export default function ResetPage() {
             </PrimaryButton>
           </Link>
         </div>
+
+        {feedbackFormUrl && (
+          <a
+            href={feedbackFormUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Share Feedback (opens in a new tab)"
+            className="press-scale mt-4 inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-plum hover:bg-plum-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/25"
+          >
+            <MessageSquare size={16} aria-hidden="true" />
+            Share Feedback
+          </a>
+        )}
       </div>
     );
   }
@@ -115,7 +130,9 @@ export default function ResetPage() {
                   type="button"
                   onClick={() => setWhen(w)}
                   className={`press-scale flex w-full items-center gap-3 rounded-xl border p-3 text-left ${
-                    active ? "border-plum bg-plum-soft" : "border-line bg-canvasAlt hover:border-plum/50"
+                    active
+                      ? "border-plum bg-plum-soft"
+                      : "border-line bg-canvasAlt hover:border-plum/50"
                   } focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/25`}
                 >
                   <span

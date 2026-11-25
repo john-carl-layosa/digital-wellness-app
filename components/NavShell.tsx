@@ -1,10 +1,6 @@
 "use client";
 
-import React, {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -18,14 +14,18 @@ import {
   Menu,
   X,
   UserCircle,
+  MessageSquare,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { InstallAppButton } from "./InstallAppButton";
+
+const feedbackFormUrl = process.env.NEXT_PUBLIC_FEEDBACK_FORM_URL?.trim();
 
 const NAV_ITEMS: {
   href: string;
   label: string;
   icon: LucideIcon;
+  external?: boolean;
 }[] = [
   {
     href: "/home",
@@ -64,14 +64,20 @@ const NAV_ITEMS: {
   },
 ];
 
+if (feedbackFormUrl) {
+  NAV_ITEMS.push({
+    href: feedbackFormUrl,
+    label: "Share Feedback",
+    icon: MessageSquare,
+    external: true,
+  });
+}
+
 function Brand() {
   return (
     <div className="flex items-center gap-3 px-2">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
-        <Music2
-          size={18}
-          className="text-plum-soft"
-        />
+        <Music2 size={18} className="text-plum-soft" />
       </span>
 
       <div className="min-w-0">
@@ -93,15 +99,16 @@ function DesktopNavList() {
   return (
     <nav className="flex flex-1 flex-col gap-1">
       {NAV_ITEMS.map((item) => {
-        const active =
-          pathname === item.href;
-
+        const active = pathname === item.href;
         const Icon = item.icon;
 
         return (
           <Link
             key={item.href}
             href={item.href}
+            target={item.external ? "_blank" : undefined}
+            rel={item.external ? "noopener noreferrer" : undefined}
+            aria-label={item.external ? `${item.label} (opens in a new tab)` : undefined}
             className={`press-scale group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
               active
                 ? "bg-plum-soft text-plum-deeper shadow-soft"
@@ -111,9 +118,7 @@ function DesktopNavList() {
             <Icon
               size={18}
               className={`transition-transform duration-200 ${
-                active
-                  ? ""
-                  : "group-hover:scale-110"
+                active ? "" : "group-hover:scale-110"
               }`}
             />
 
@@ -128,69 +133,41 @@ function DesktopNavList() {
 function MobileHeader() {
   const pathname = usePathname();
 
-  const [menuOpen, setMenuOpen] =
-    useState(false);
-
-  const menuRef =
-    useRef<HTMLDivElement>(null);
-
-  const buttonRef =
-    useRef<HTMLButtonElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!menuOpen) {
       return;
     }
 
-    const handlePointerDown = (
-      event: PointerEvent
-    ) => {
-      const target =
-        event.target as Node;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
 
-      if (
-        menuRef.current?.contains(target)
-      ) {
+      if (menuRef.current?.contains(target)) {
         return;
       }
 
-      if (
-        buttonRef.current?.contains(target)
-      ) {
+      if (buttonRef.current?.contains(target)) {
         return;
       }
 
       setMenuOpen(false);
     };
 
-    const handleKeyDown = (
-      event: KeyboardEvent
-    ) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMenuOpen(false);
       }
     };
 
-    document.addEventListener(
-      "pointerdown",
-      handlePointerDown
-    );
-
-    document.addEventListener(
-      "keydown",
-      handleKeyDown
-    );
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener(
-        "pointerdown",
-        handlePointerDown
-      );
-
-      document.removeEventListener(
-        "keydown",
-        handleKeyDown
-      );
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [menuOpen]);
 
@@ -207,10 +184,7 @@ function MobileHeader() {
           aria-label="Go to Home"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-plum-deeper">
-            <Music2
-              size={15}
-              className="text-plum-soft"
-            />
+            <Music2 size={15} className="text-plum-soft" />
           </span>
 
           <p className="font-display text-sm font-semibold text-plum-deep">
@@ -221,16 +195,8 @@ function MobileHeader() {
         <button
           ref={buttonRef}
           type="button"
-          onClick={() =>
-            setMenuOpen(
-              (current) => !current
-            )
-          }
-          aria-label={
-            menuOpen
-              ? "Close menu"
-              : "Open menu"
-          }
+          onClick={() => setMenuOpen((current) => !current)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
           aria-haspopup="true"
           className="press-scale flex h-10 w-10 items-center justify-center rounded-full text-plum-deep hover:bg-plum-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-plum/25"
@@ -239,18 +205,14 @@ function MobileHeader() {
             <Menu
               size={20}
               className={`absolute transition-all duration-200 ${
-                menuOpen
-                  ? "rotate-90 opacity-0"
-                  : "rotate-0 opacity-100"
+                menuOpen ? "rotate-90 opacity-0" : "rotate-0 opacity-100"
               }`}
             />
 
             <X
               size={20}
               className={`absolute transition-all duration-200 ${
-                menuOpen
-                  ? "rotate-0 opacity-100"
-                  : "-rotate-90 opacity-0"
+                menuOpen ? "rotate-0 opacity-100" : "-rotate-90 opacity-0"
               }`}
             />
           </span>
@@ -261,12 +223,10 @@ function MobileHeader() {
         <div
           ref={menuRef}
           role="menu"
-          className="absolute right-4 top-[calc(100%+8px)] w-64 origin-top-right animate-scale-in overflow-hidden rounded-2xl border border-line bg-surface p-2 shadow-elevated"
+          className="absolute right-4 top-[calc(100%+8px)] max-h-[calc(100dvh-5rem)] w-64 origin-top-right animate-scale-in overflow-y-auto rounded-2xl border border-line bg-surface p-2 shadow-elevated"
         >
           {NAV_ITEMS.map((item) => {
-            const active =
-              pathname === item.href;
-
+            const active = pathname === item.href;
             const Icon = item.icon;
 
             return (
@@ -274,9 +234,10 @@ function MobileHeader() {
                 key={item.href}
                 href={item.href}
                 role="menuitem"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                target={item.external ? "_blank" : undefined}
+                rel={item.external ? "noopener noreferrer" : undefined}
+                aria-label={item.external ? `${item.label} (opens in a new tab)` : undefined}
+                onClick={() => setMenuOpen(false)}
                 className={`press-scale flex min-h-[48px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
                     ? "bg-plum-soft text-plum-deeper"
@@ -285,9 +246,7 @@ function MobileHeader() {
               >
                 <span
                   className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                    active
-                      ? "bg-plum text-white"
-                      : "bg-plum-soft text-plum"
+                    active ? "bg-plum text-white" : "bg-plum-soft text-plum"
                   }`}
                 >
                   <Icon size={16} />
@@ -311,11 +270,7 @@ function MobileHeader() {
   );
 }
 
-export function NavShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function NavShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
